@@ -150,19 +150,15 @@ def build_phase4(ctx: BuildContext) -> str:
 
 
 def build_phase5(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase define el roadmap por olas, la estimacion de tamano, el RAID "
-        "y el modelo operativo de habilitacion.",
-    )
+    # FEAT-004: corpus-grounded content lives in phases/phase5.py.
+    from phases import phase5
+    return phase5.build(ctx)
 
 
 def build_phase6(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase cuantifica el caso de negocio: ROI y outcomes contra los "
-        "indicadores del RFP, cerrando el Hilo Dorado.",
-    )
+    # FEAT-004: corpus-grounded content lives in phases/phase6.py.
+    from phases import phase6
+    return phase6.build(ctx)
 
 
 BUILDERS: Dict[str, Callable[[BuildContext], str]] = {
@@ -181,50 +177,112 @@ BUILDERS: Dict[str, Callable[[BuildContext], str]] = {
 # --------------------------------------------------------------------------- #
 
 def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: List[object]) -> str:
+    """Genera el indice (README.md) del directorio de informes del advisory."""
     from engine.phases import PHASE_ORDER
+    import roles as roles_pkg
 
     n_pdf = sum(1 for d in documents if d.kind == "pdf")
     n_png = sum(1 for d in documents if d.kind == "png")
 
+    committee = roles_pkg.committee()
+    cells = roles_pkg.cells()
+
+    def role_label(code: str) -> str:
+        role = roles.get(code)
+        return f"{code} ({role.name})" if role else code
+
     lines = [
         "# Advisory Credi10 2.0 - Framework Zero-Drift",
         "",
-        "> *(Index placeholder generado por FEAT-001; se enriquece en features "
-        "posteriores.)*",
+        "Este directorio contiene los **informes del advisory Credi10 2.0**, "
+        "generados automaticamente por el motor `advisory-system/` a partir del "
+        "corpus de evidencia (RFP, assessment WSO2/Studio F y diagramas de "
+        "arquitectura). Cada informe corresponde a una fase del framework "
+        "**Zero-Drift** y es 100% reproducible re-ejecutando el quickstart.",
         "",
-        "Este directorio contiene los informes del advisory ejecutado con el "
-        "framework **Zero-Drift** (Comite de Gobierno + 3 Celulas, 17 roles, "
-        "7 fases con stage-gates QG-0..QG-6, RACI-V, AICV-E y Hilo Dorado).",
+        "> **Regenerar todos los informes:**",
+        ">",
+        "> ```bash",
+        "> python3 advisory-system/quickstart.py --phase all",
+        "> ```",
+        "",
+        "## El framework Zero-Drift",
+        "",
+        "Zero-Drift organiza el advisory como un **Comite de Gobierno** mas "
+        "**3 Celulas** de trabajo, con **17 roles** declarativos, **7 fases** "
+        "con stage-gates **QG-0..QG-6**, separacion productor/verificador "
+        "(**RACI-V**), gobierno de calidad **AICV-E** (a cargo del AM) y un "
+        "**Hilo Dorado** de trazabilidad que conecta cada driver del RFP con un "
+        "outcome de negocio.",
+        "",
+        f"- **Comite de Gobierno:** {', '.join(role_label(c) for c in committee)}.",
+    ]
+    for cell_name, members in cells.items():
+        lines.append(f"- **{cell_name}:** {', '.join(members)}.")
+    lines += [
+        f"- **Roles totales:** {len(roles)} (catalogo declarativo en "
+        "`advisory-system/roles/roles.json`).",
         "",
         "## Corpus de evidencia",
         "",
-        f"- Documentos PDF: **{n_pdf}**",
-        f"- Diagramas PNG (evidencia binaria): **{n_png}**",
+        f"- Documentos PDF analizados: **{n_pdf}**",
+        f"- Diagramas PNG (evidencia binaria transcrita): **{n_png}**",
         "",
         "## Informes por fase",
         "",
-        "| Fase | Informe | Lider(es) | Verificador | Gate |",
-        "| --- | --- | --- | --- | --- |",
+        "| Fase | Informe | Entregables | Lider(es) | Verificador | Gate |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for pid in PHASE_ORDER:
         ph = phases[pid]
         lines.append(
             f"| {ph.name} | [{ph.filename}]({ph.filename}) | "
-            f"{', '.join(ph.leaders)} | {ph.verifier} | {ph.gate.id} |"
+            f"{', '.join(ph.deliverables)} | {', '.join(ph.leaders)} | "
+            f"{ph.verifier} | {ph.gate.id} |"
         )
     lines += [
         "",
-        "## Flujo de fases (Hilo Dorado)",
+        "## Hilo Dorado (F1 -> F6)",
+        "",
+        "La trazabilidad end-to-end encadena: Driver (F1) -> Capability (F1) -> "
+        "Benchmark (F2) -> Gap (F3) -> Reliever (F3) -> ABB (F3.5) -> SBB (F4) "
+        "-> Ola/WAV (F5) -> ROI/Outcome (F6).",
         "",
         "```mermaid",
         "flowchart LR",
-        '    F0["Fase 0<br/>Higiene"] --> F1["Fase 1<br/>AS-IS"]',
-        '    F1 --> F2["Fase 2<br/>Estado del Arte"]',
-        '    F2 --> F3["Fase 3+3.5<br/>Gaps"]',
-        '    F3 --> F4["Fase 4<br/>TO-BE"]',
-        '    F4 --> F5["Fase 5<br/>Roadmap/RAID"]',
-        '    F5 --> F6["Fase 6<br/>Caso de Negocio"]',
+        '    DRV["DRV<br/>Drivers RFP (F1)"] --> CAP["CAP<br/>Capabilities (F1)"]',
+        '    CAP --> BMK["BMK<br/>Benchmarks (F2)"]',
+        '    BMK --> GAP["GAP<br/>Gaps (F3)"]',
+        '    GAP --> REL["REL<br/>Relievers (F3)"]',
+        '    REL --> ABB["ABB<br/>ABBs (F3.5)"]',
+        '    ABB --> SBB["SBB<br/>SBBs (F4)"]',
+        '    SBB --> WAV["WAV<br/>Olas (F5)"]',
+        '    WAV --> ROI["ROI<br/>Outcomes (F6)"]',
         "```",
+        "",
+        "## Flujo de fases y stage-gates",
+        "",
+        "```mermaid",
+        "flowchart LR",
+        '    F0["Fase 0<br/>Higiene (QG-0)"] --> F1["Fase 1<br/>AS-IS (QG-1)"]',
+        '    F1 --> F2["Fase 2<br/>Estado del Arte (QG-2)"]',
+        '    F2 --> F3["Fase 3+3.5<br/>Gaps (QG-3)"]',
+        '    F3 --> F4["Fase 4<br/>TO-BE (QG-4)"]',
+        '    F4 --> F5["Fase 5<br/>Roadmap/RAID (QG-5)"]',
+        '    F5 --> F6["Fase 6<br/>Caso de Negocio (QG-6)"]',
+        "```",
+        "",
+        "## Como regenerar",
+        "",
+        "- Todo el pipeline (7 informes + este indice): "
+        "`python3 advisory-system/quickstart.py --phase all`",
+        "- Una sola fase (ej. Fase 3): "
+        "`python3 advisory-system/quickstart.py --phase 3`",
+        "- Opciones: `--corpus <ruta>` para otro corpus, `--out <ruta>` para "
+        "otra carpeta de salida.",
+        "",
+        "La documentacion del motor (estrategia, arquitectura y pruebas) esta "
+        "en [`advisory-system/README.md`](../advisory-system/README.md).",
         "",
     ]
     return "\n".join(lines) + "\n"

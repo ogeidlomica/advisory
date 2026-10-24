@@ -337,5 +337,149 @@ class TestPhase34ReportsContent(unittest.TestCase):
         self.assertIn("STRIDE", body)
 
 
+class TestPhase56ReportsContent(unittest.TestCase):
+    """FEAT-004: corpus-grounded content for phases 5 and 6."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+
+        cls.phases = load_phases()
+        roles = roles_pkg.load_roles()
+        loader = CorpusLoader(_REPO_ROOT)
+        docs = loader.load()
+        cls.bodies = {}
+        for pid in ("5", "6"):
+            ph = cls.phases[pid]
+            ctx = BuildContext(ph, roles, docs, GoldenThread())
+            cls.bodies[pid] = ph.builder(ctx)
+
+    def _assert_structural_contract(self, pid, verdict_id):
+        body = self.bodies[pid]
+        self.assertIn("```mermaid", body, f"fase {pid} debe incluir mermaid")
+        self.assertTrue(
+            any(line.startswith("|") for line in body.splitlines()),
+            f"fase {pid} debe incluir una tabla markdown",
+        )
+        self.assertTrue(
+            any(tag in body for tag in (
+                "[VERIFIED-FACT]", "[DOC-ASSUMPTION]",
+                "[DOC-CONFLICT]", "[EPISTEMIC-VOID]")),
+            f"fase {pid} debe incluir al menos una etiqueta epistemica",
+        )
+        self.assertIn(f"Veredicto {verdict_id}", body,
+                      f"fase {pid} debe incluir veredicto {verdict_id}")
+
+    def test_phase5_contract_and_tokens(self):
+        self._assert_structural_contract("5", "QG-5")
+        body = self.bodies["5"]
+        # Roadmap por olas como gantt Mermaid.
+        self.assertIn("gantt", body, "fase 5 debe incluir un gantt Mermaid")
+        # Matriz RAID con las 4 secciones.
+        self.assertIn("RAID", body)
+        for section in ("Supuesto", "Restriccion", "Dependencia", "Prerrequisito"):
+            self.assertIn(section, body, f"fase 5 debe incluir la seccion {section}")
+        # WSJF y Team Topologies.
+        self.assertIn("WSJF", body)
+        self.assertIn("Team Topologies", body)
+        self.assertIn("stream-aligned", body)
+        # Restricciones reales del RFP.
+        for token in ("preservar", "Siesa", "continuidad", "60 dias"):
+            self.assertIn(token, body, f"fase 5 debe mencionar {token}")
+        # Hilo Dorado WAV referenciando SBB y DRV.
+        self.assertIn("WAV-000", body)
+        self.assertIn("WAV-001", body)
+        self.assertIn("SBB-", body)
+        self.assertIn("DRV-", body)
+
+    def test_phase6_contract_and_tokens(self):
+        self._assert_structural_contract("6", "QG-6")
+        body = self.bodies["6"]
+        # Value Driver Tree (grafo Mermaid con outcomes tecnicos -> negocio).
+        self.assertIn("Technical Outcomes", body)
+        self.assertIn("Business Outcomes", body)
+        self.assertIn("flowchart", body, "fase 6 debe incluir un grafo flowchart")
+        # Linea base de costos ausente marcada como vacio epistemico.
+        self.assertIn("[EPISTEMIC-VOID]", body)
+        # Toda cifra monetaria debe llevar [DOC-ASSUMPTION]: las tablas
+        # financieras (CAPEX/OPEX, TCO, escenarios) deben portar la etiqueta.
+        for term in ("CAPEX", "OPEX", "TCO", "VAN/NPV", "TIR/IRR", "Payback"):
+            self.assertIn(term, body, f"fase 6 debe incluir {term}")
+        self.assertIn("[DOC-ASSUMPTION]", body)
+        # Las filas de escenarios financieros deben estar en una tabla con
+        # DOC-ASSUMPTION en su cabecera.
+        self.assertTrue(
+            any("Conservador" in l and "|" in l for l in body.splitlines()),
+            "fase 6 debe incluir el escenario Conservador en una tabla",
+        )
+        # Hilo Dorado ROI referenciando DRV y completando F1->F6.
+        self.assertIn("ROI-001", body)
+        self.assertIn("DRV-001", body)
+        self.assertIn("WAV-", body)
+        self.assertIn("SBB-", body)
+        # Criterios de evaluacion de la oferta 15/30/10/30/15.
+        for pts in ("15", "30", "10"):
+            self.assertIn(pts, body)
+        self.assertIn("Experiencia", body)
+        self.assertIn("Metodologia", body)
+
+
+class TestReadmeIndexAndPipeline(unittest.TestCase):
+    """FEAT-004: the generated README indexes and links all 7 reports."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        # Una sola corrida de `--phase all` deja en disco README + 7 informes.
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        with open(os.path.join(cls.out_dir, "README.md"), encoding="utf-8") as fh:
+            cls.readme = fh.read()
+
+    def test_readme_exists_and_links_all_reports(self):
+        self.assertTrue(self.readme, "README.md debe existir y no estar vacio")
+        for fname in EXPECTED_FILENAMES.values():
+            # Enlace markdown [fname](fname).
+            self.assertIn(f"[{fname}]({fname})", self.readme,
+                          f"README debe enlazar {fname}")
+            # Y el archivo debe existir en disco.
+            self.assertTrue(
+                os.path.isfile(os.path.join(self.out_dir, fname)),
+                f"{fname} debe existir en disco tras --phase all",
+            )
+
+    def test_readme_shows_hilo_dorado(self):
+        self.assertIn("```mermaid", self.readme)
+        self.assertIn("Hilo Dorado", self.readme)
+        # El grafo encadena DRV..ROI.
+        for stage in ("DRV", "CAP", "BMK", "GAP", "REL", "ABB", "SBB", "WAV", "ROI"):
+            self.assertIn(stage, self.readme, f"el Hilo Dorado debe incluir {stage}")
+
+    def test_readme_has_framework_and_regen_command(self):
+        self.assertIn("Zero-Drift", self.readme)
+        self.assertIn("python3 advisory-system/quickstart.py --phase all",
+                      self.readme)
+
+    def test_generated_phase56_on_disk(self):
+        with open(os.path.join(self.out_dir, "05-roadmap-estimacion-raid.md"),
+                  encoding="utf-8") as fh:
+            p5 = fh.read()
+        self.assertIn("gantt", p5)
+        self.assertIn("RAID", p5)
+        with open(os.path.join(self.out_dir, "06-caso-de-negocio.md"),
+                  encoding="utf-8") as fh:
+            p6 = fh.read()
+        self.assertIn("[DOC-ASSUMPTION]", p6)
+        self.assertIn("[EPISTEMIC-VOID]", p6)
+
+
 if __name__ == "__main__":
     unittest.main()
