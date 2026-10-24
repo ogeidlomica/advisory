@@ -690,5 +690,72 @@ class TestKnowledgeBase(unittest.TestCase):
         self.assertEqual(len(docs), 18)
 
 
+class TestSkillsLoader(unittest.TestCase):
+    """FEAT-002: declarative .kiro/skills policy layer + engine loader.
+
+    These tests assert that the hand-authored SKILL.md policy documents are
+    discoverable and that the ai-opportunities catalog is parseable by the
+    stdlib loader. No solution/application code is involved: the SKILL.md files
+    are advisory policy documentation and the loader is report-generator
+    tooling that consumes that documentation.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.skills import SkillsLoader, default_skills_dir
+        cls.skills_dir = default_skills_dir(_REPO_ROOT)
+        cls.loader = SkillsLoader(root=_REPO_ROOT)
+        cls.skills = cls.loader.load()
+
+    def test_skills_dir_resolves_under_repo_root(self):
+        self.assertEqual(
+            self.skills_dir,
+            os.path.join(_REPO_ROOT, ".kiro", "skills"),
+        )
+        self.assertTrue(os.path.isdir(self.skills_dir))
+
+    def test_discovers_the_four_policy_skills(self):
+        names = {s.name for s in self.skills}
+        for expected in {
+            "complete-corpus-ingestion",
+            "token-budget-optimization",
+            "zero-drift-roles-policy",
+            "ai-opportunities-catalog",
+        }:
+            self.assertIn(expected, names)
+
+    def test_skills_sorted_and_have_frontmatter(self):
+        names = [s.name for s in self.skills]
+        self.assertEqual(names, sorted(names), "orden determinista por nombre")
+        for s in self.skills:
+            self.assertTrue(s.description, f"{s.name} debe tener description")
+            self.assertEqual(s.version, "1.0.0", s.name)
+
+    def test_ai_catalog_parses_both_tracks(self):
+        entries = self.loader.ai_opportunities()
+        self.assertTrue(entries, "el catalogo de IA debe parsearse")
+        tracks = {e.track for e in entries}
+        self.assertEqual(tracks, {"ai-as-product", "ai-as-build-accelerator"})
+        # Every entry carries the fields the Phase 4 builder will render.
+        for e in entries:
+            self.assertTrue(e.id)
+            self.assertTrue(e.name)
+            self.assertTrue(e.use_case)
+            self.assertTrue(e.required_data)
+            self.assertTrue(e.viability)
+            self.assertTrue(e.roadmap_hook)
+
+    def test_ai_catalog_order_is_stable(self):
+        ids1 = [e.id for e in self.loader.ai_opportunities()]
+        ids2 = [e.id for e in self.loader.ai_opportunities()]
+        self.assertEqual(ids1, ids2, "orden de catalogo determinista")
+
+    def test_graceful_degradation_when_skills_absent(self):
+        from engine.skills import SkillsLoader
+        missing = SkillsLoader(skills_dir=os.path.join(_REPO_ROOT, "__no_skills__"))
+        self.assertEqual(missing.load(), [])
+        self.assertEqual(missing.ai_opportunities(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
