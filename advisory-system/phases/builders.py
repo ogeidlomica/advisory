@@ -267,7 +267,11 @@ def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: 
             f"{', '.join(ph.deliverables)} | {', '.join(ph.leaders)} | "
             f"{ph.verifier} | {ph.gate.id} |"
         )
-    from engine.phases import CATALOG_FILENAME, PROPOSAL_FILENAME
+    from engine.phases import (
+        CATALOG_FILENAME,
+        EXEC_REPORT_FILENAME,
+        PROPOSAL_FILENAME,
+    )
     lines += [
         "",
         "## Informes del engagement (familia de 3)",
@@ -279,6 +283,10 @@ def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: 
         f"- [`{PROPOSAL_FILENAME}`]({PROPOSAL_FILENAME}): **Propuesta comercial** "
         "emitida por Kulgops (documento de venta con las 11 secciones a-k; "
         "perfil corporativo e inversion marcados [DOC-ASSUMPTION]).",
+        f"- [`{EXEC_REPORT_FILENAME}`]({EXEC_REPORT_FILENAME}): **Reporte "
+        "gerencial** (soporte ejecutivo de la propuesta: alcance, fases, "
+        "diagnostico de alto nivel, estrategia, riesgos, consideraciones y "
+        "prerrequisitos; tono gerencial, no tecnico).",
         "",
         "## Dossier de proyecto TO-BE (por etapa del SDLC)",
         "",

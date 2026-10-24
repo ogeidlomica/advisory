@@ -21,6 +21,7 @@ from engine.knowledge import KnowledgeBase
 from engine.model import GoldenThread, Phase, raci_v_for
 from engine.phases import (
     CATALOG_FILENAME,
+    EXEC_REPORT_FILENAME,
     PHASE_ORDER,
     PROPOSAL_FILENAME,
     load_phases,
@@ -29,6 +30,7 @@ from phases import build_readme
 from phases import catalog as catalog_mod
 from phases import commercial_proposal as proposal_mod
 from phases import dossier as dossier_mod
+from phases import executive_report as exec_report_mod
 from phases.builders import BuildContext
 
 import roles as roles_pkg
@@ -54,6 +56,7 @@ class RunSummary:
     dossier_dir: Optional[str] = None
     dossier_file_count: int = 0
     proposal_path: Optional[str] = None
+    exec_report_path: Optional[str] = None
 
     def log_lines(self) -> List[str]:
         out = []
@@ -75,6 +78,8 @@ class RunSummary:
             )
         if self.proposal_path:
             out.append(f"[Propuesta Comercial] -> {self.proposal_path}")
+        if self.exec_report_path:
+            out.append(f"[Reporte Gerencial] -> {self.exec_report_path}")
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
         return out
@@ -122,6 +127,10 @@ class AdvisoryOrchestrator:
             # Commercial proposal (report 1): sales document issued by Kulgops,
             # written deterministically from the corpus/roles.
             summary.proposal_path = self._write_commercial_proposal()
+            # Executive/management report (report 2): executive support of the
+            # proposal, written deterministically from the engine's sources of
+            # truth (phase1/phase3/dossier/KB).
+            summary.exec_report_path = self._write_executive_report()
             summary.readme_path = self._write_readme()
         else:
             if phase not in self.phases:
@@ -224,6 +233,17 @@ class AdvisoryOrchestrator:
             documents=self.corpus.documents,
         )
         path = os.path.join(self.out_dir, PROPOSAL_FILENAME)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        return path
+
+    def _write_executive_report(self) -> str:
+        body = exec_report_mod.build(
+            knowledge_base=self.knowledge_base,
+            roles=self.roles,
+            documents=self.corpus.documents,
+        )
+        path = os.path.join(self.out_dir, EXEC_REPORT_FILENAME)
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(body)
         return path

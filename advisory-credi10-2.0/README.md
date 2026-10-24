@@ -48,6 +48,7 @@ La ingesta del corpus es **completa y verificable** (nada de muestreo parcial) y
 Ademas de los informes por fase, el motor genera un conjunto de **informes del engagement** orientados a distintas audiencias, enlazados desde este indice maestro:
 
 - [`1-propuesta-comercial.md`](1-propuesta-comercial.md): **Propuesta comercial** emitida por Kulgops (documento de venta con las 11 secciones a-k; perfil corporativo e inversion marcados [DOC-ASSUMPTION]).
+- [`2-reporte-gerencial.md`](2-reporte-gerencial.md): **Reporte gerencial** (soporte ejecutivo de la propuesta: alcance, fases, diagnostico de alto nivel, estrategia, riesgos, consideraciones y prerrequisitos; tono gerencial, no tecnico).
 
 ## Dossier de proyecto TO-BE (por etapa del SDLC)
 

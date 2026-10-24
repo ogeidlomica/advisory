@@ -39,6 +39,13 @@ CATALOG_FILENAME = "04b-catalogo-historias.md"
 # ``phases/commercial_proposal.py``.
 PROPOSAL_FILENAME = "1-propuesta-comercial.md"
 
+# Executive/management report (report 2, task three-reports): the executive
+# support of the commercial proposal (scope, phases, high-level diagnosis,
+# strategy, risks, considerations, prerequisites), written by the orchestrator
+# on `--phase all`. Not a stage-gated phase; its builder lives in
+# ``phases/executive_report.py``.
+EXEC_REPORT_FILENAME = "2-reporte-gerencial.md"
+
 
 def _gates() -> Dict[str, Gate]:
     return {

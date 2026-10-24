@@ -569,6 +569,102 @@ class TestCommercialProposal(unittest.TestCase):
         )
 
 
+class TestExecutiveReport(unittest.TestCase):
+    """task three-reports / FEAT-003: the engine writes the management report.
+
+    After `--phase all` the executive/management report must exist on disk and
+    satisfy its content contract: executive sections (scope, phases, high-level
+    diagnosis, strategy, risks, considerations, prerequisites), >= 1 Mermaid and
+    >= 1 table, a reference to the technical report, and the real Credi10
+    findings (Siesa/UnoEE and .NET). Figures marked [DOC-ASSUMPTION].
+    """
+
+    EXEC_REPORT_FILENAME = "2-reporte-gerencial.md"
+    TECH_REPORT_REF = "3-informe-tecnico/README.md"
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        cls.path = os.path.join(cls.out_dir, cls.EXEC_REPORT_FILENAME)
+        with open(cls.path, encoding="utf-8") as fh:
+            cls.body = fh.read()
+
+    def test_report_file_exists(self):
+        self.assertTrue(os.path.isfile(self.path),
+                        "el reporte gerencial debe existir tras --phase all")
+        self.assertTrue(self.body.strip(), "el reporte no puede estar vacio")
+
+    def test_executive_sections_present(self):
+        expected = [
+            "## 1. Resumen ejecutivo",
+            "## 2. Alcance comercial del proyecto",
+            "## 3. Fases del proyecto (Zero-Drift)",
+            "## 4. Diagnostico de alto nivel",
+            "## 5. Estrategia de implementacion",
+            "## 6. Riesgos",
+            "## 7. Consideraciones",
+            "## 8. Prerrequisitos",
+        ]
+        for heading in expected:
+            self.assertIn(heading, self.body,
+                          f"el reporte debe incluir la seccion '{heading}'")
+
+    def test_has_mermaid_and_table(self):
+        self.assertGreaterEqual(self.body.count("```mermaid"), 1,
+                                "debe haber al menos un diagrama Mermaid")
+        self.assertIn("| --- |", self.body,
+                      "el reporte debe incluir al menos una tabla markdown")
+        # El Mermaid de alto nivel vive en el diagnostico.
+        diag_idx = self.body.index("## 4. Diagnostico de alto nivel")
+        est_idx = self.body.index("## 5. Estrategia de implementacion")
+        self.assertIn("```mermaid", self.body[diag_idx:est_idx],
+                      "el diagnostico debe incluir un Mermaid de alto nivel")
+
+    def test_references_technical_report(self):
+        self.assertIn(self.TECH_REPORT_REF, self.body,
+                      "el reporte debe referenciar el informe tecnico")
+
+    def test_references_commercial_proposal(self):
+        self.assertIn("1-propuesta-comercial.md", self.body,
+                      "el reporte debe referenciar la propuesta comercial")
+
+    def test_reflects_real_findings(self):
+        # Hallazgos reales de Credi10: acople al ERP y obsolescencia .NET.
+        self.assertTrue(
+            ("Siesa" in self.body) or ("UnoEE" in self.body),
+            "el diagnostico debe reflejar el acople a Siesa/UnoEE",
+        )
+        self.assertIn(".NET", self.body,
+                      "el diagnostico debe reflejar la obsolescencia .NET")
+        # Los 5 indicadores de retorno del RFP.
+        for delta in ("90% -> 99%", "60% -> 80%", "80% -> 80%",
+                      "50% -> 100%", "70% -> 100%"):
+            self.assertIn(delta, self.body,
+                          f"el reporte debe incluir el indicador {delta}")
+
+    def test_figures_marked_doc_assumption(self):
+        self.assertIn("[DOC-ASSUMPTION]", self.body,
+                      "las cifras del reporte deben marcarse [DOC-ASSUMPTION]")
+
+    def test_readme_links_report(self):
+        with open(os.path.join(self.out_dir, "README.md"),
+                  encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertIn(
+            f"[`{self.EXEC_REPORT_FILENAME}`]({self.EXEC_REPORT_FILENAME})",
+            readme,
+            "el README maestro debe enlazar el reporte gerencial",
+        )
+
+
 class TestGateEvaluation(unittest.TestCase):
     """Review follow-up: the stage-gate verdict must be COMPUTED, not hardcoded.
 
