@@ -267,8 +267,18 @@ def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: 
             f"{', '.join(ph.deliverables)} | {', '.join(ph.leaders)} | "
             f"{ph.verifier} | {ph.gate.id} |"
         )
-    from engine.phases import CATALOG_FILENAME
+    from engine.phases import CATALOG_FILENAME, PROPOSAL_FILENAME
     lines += [
+        "",
+        "## Informes del engagement (familia de 3)",
+        "",
+        "Ademas de los informes por fase, el motor genera un conjunto de "
+        "**informes del engagement** orientados a distintas audiencias, "
+        "enlazados desde este indice maestro:",
+        "",
+        f"- [`{PROPOSAL_FILENAME}`]({PROPOSAL_FILENAME}): **Propuesta comercial** "
+        "emitida por Kulgops (documento de venta con las 11 secciones a-k; "
+        "perfil corporativo e inversion marcados [DOC-ASSUMPTION]).",
         "",
         "## Dossier de proyecto TO-BE (por etapa del SDLC)",
         "",

@@ -481,6 +481,94 @@ class TestReadmeIndexAndPipeline(unittest.TestCase):
         self.assertIn("[EPISTEMIC-VOID]", p6)
 
 
+class TestCommercialProposal(unittest.TestCase):
+    """task three-reports / FEAT-002: the engine writes the commercial proposal.
+
+    After `--phase all` the proposal must exist on disk and satisfy its content
+    contract: Kulgops brand marked [DOC-ASSUMPTION], the 11 sections a-k, a
+    high-level context Mermaid diagram, a Gantt, a table, and the investment
+    marked [DOC-ASSUMPTION].
+    """
+
+    PROPOSAL_FILENAME = "1-propuesta-comercial.md"
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        cls.path = os.path.join(cls.out_dir, cls.PROPOSAL_FILENAME)
+        with open(cls.path, encoding="utf-8") as fh:
+            cls.body = fh.read()
+
+    def test_proposal_file_exists(self):
+        self.assertTrue(os.path.isfile(self.path),
+                        "la propuesta comercial debe existir tras --phase all")
+        self.assertTrue(self.body.strip(), "la propuesta no puede estar vacia")
+
+    def test_brand_kulgops_present_and_doc_assumption(self):
+        self.assertIn("Kulgops", self.body)
+        # El perfil corporativo de Kulgops debe marcarse como referencia.
+        self.assertIn("Perfil corporativo de referencia [DOC-ASSUMPTION]",
+                      self.body)
+
+    def test_eleven_sections_a_to_k(self):
+        expected = [
+            "## a. Quienes somos",
+            "## b. Alcance del servicio",
+            "## c. Contexto de negocio",
+            "## d. Metodologia de consultoria",
+            "## e. Entregables",
+            "## f. Estrategia de consultoria",
+            "## g. Equipo de trabajo",
+            "## h. Cronograma de trabajo",
+            "## i. Supuestos y restricciones",
+            "## j. Inversion",
+            "## k. Terminos y condiciones",
+        ]
+        for heading in expected:
+            self.assertIn(heading, self.body,
+                          f"la propuesta debe incluir la seccion '{heading}'")
+
+    def test_has_context_diagram_and_gantt(self):
+        # >= 1 bloque mermaid (diagrama de contexto de alto nivel).
+        self.assertGreaterEqual(self.body.count("```mermaid"), 1,
+                                "debe haber al menos un diagrama Mermaid")
+        # >= 1 Gantt en el cronograma.
+        self.assertIn("gantt", self.body)
+        # El diagrama de contexto vive en la seccion de contexto de negocio.
+        ctx_idx = self.body.index("## c. Contexto de negocio")
+        met_idx = self.body.index("## d. Metodologia de consultoria")
+        self.assertIn("```mermaid", self.body[ctx_idx:met_idx],
+                      "el diagrama de contexto debe estar en la seccion c")
+
+    def test_has_markdown_table(self):
+        self.assertIn("| --- |", self.body,
+                      "la propuesta debe incluir al menos una tabla markdown")
+
+    def test_investment_marked_doc_assumption(self):
+        inv_idx = self.body.index("## j. Inversion")
+        terms_idx = self.body.index("## k. Terminos y condiciones")
+        investment = self.body[inv_idx:terms_idx]
+        self.assertIn("[DOC-ASSUMPTION]", investment,
+                      "la inversion debe estar marcada [DOC-ASSUMPTION]")
+
+    def test_readme_links_proposal(self):
+        with open(os.path.join(self.out_dir, "README.md"),
+                  encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertIn(
+            f"[`{self.PROPOSAL_FILENAME}`]({self.PROPOSAL_FILENAME})", readme,
+            "el README maestro debe enlazar la propuesta comercial",
+        )
+
+
 class TestGateEvaluation(unittest.TestCase):
     """Review follow-up: the stage-gate verdict must be COMPUTED, not hardcoded.
 

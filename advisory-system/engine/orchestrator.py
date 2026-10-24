@@ -19,9 +19,15 @@ from engine.corpus import CorpusLoader
 from engine.gating import evaluate_gate
 from engine.knowledge import KnowledgeBase
 from engine.model import GoldenThread, Phase, raci_v_for
-from engine.phases import CATALOG_FILENAME, PHASE_ORDER, load_phases
+from engine.phases import (
+    CATALOG_FILENAME,
+    PHASE_ORDER,
+    PROPOSAL_FILENAME,
+    load_phases,
+)
 from phases import build_readme
 from phases import catalog as catalog_mod
+from phases import commercial_proposal as proposal_mod
 from phases import dossier as dossier_mod
 from phases.builders import BuildContext
 
@@ -47,6 +53,7 @@ class RunSummary:
     catalog_path: Optional[str] = None
     dossier_dir: Optional[str] = None
     dossier_file_count: int = 0
+    proposal_path: Optional[str] = None
 
     def log_lines(self) -> List[str]:
         out = []
@@ -66,6 +73,8 @@ class RunSummary:
                 f"[Dossier TO-BE] {self.dossier_file_count} archivos -> "
                 f"{self.dossier_dir}"
             )
+        if self.proposal_path:
+            out.append(f"[Propuesta Comercial] -> {self.proposal_path}")
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
         return out
@@ -110,6 +119,9 @@ class AdvisoryOrchestrator:
             dossier_dir, dossier_count = self._write_dossier()
             summary.dossier_dir = dossier_dir
             summary.dossier_file_count = dossier_count
+            # Commercial proposal (report 1): sales document issued by Kulgops,
+            # written deterministically from the corpus/roles.
+            summary.proposal_path = self._write_commercial_proposal()
             summary.readme_path = self._write_readme()
         else:
             if phase not in self.phases:
@@ -204,6 +216,17 @@ class AdvisoryOrchestrator:
         paths = dossier_mod.write(self.out_dir, self.knowledge_base)
         dossier_dir = os.path.join(self.out_dir, dossier_mod.DOSSIER_DIRNAME)
         return dossier_dir, len(paths)
+
+    def _write_commercial_proposal(self) -> str:
+        body = proposal_mod.build(
+            knowledge_base=self.knowledge_base,
+            roles=self.roles,
+            documents=self.corpus.documents,
+        )
+        path = os.path.join(self.out_dir, PROPOSAL_FILENAME)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        return path
 
     def _write_readme(self) -> str:
         body = build_readme(self.phases, self.roles, self.corpus.documents)

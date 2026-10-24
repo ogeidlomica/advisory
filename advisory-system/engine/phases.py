@@ -33,6 +33,12 @@ PHASE_ORDER = ["0", "1", "2", "3", "4", "5", "6"]
 # written by the orchestrator when running the full pipeline.
 CATALOG_FILENAME = "04b-catalogo-historias.md"
 
+# Commercial proposal (report 1, task three-reports): the sales document issued
+# by the consultancy (brand Kulgops), written by the orchestrator on `--phase
+# all`. Not a stage-gated phase; its builder lives in
+# ``phases/commercial_proposal.py``.
+PROPOSAL_FILENAME = "1-propuesta-comercial.md"
+
 
 def _gates() -> Dict[str, Gate]:
     return {
