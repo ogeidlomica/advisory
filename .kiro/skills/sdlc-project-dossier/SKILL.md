@@ -23,6 +23,14 @@ como el sujeto de la politica.
 El dossier no reemplaza los informes por fase: los **consolida** en una vista
 orientada a ejecutar el proyecto, enlazando al detalle por fase.
 
+> **Integracion con el informe tecnico.** El dossier TO-BE se **integra dentro
+> del informe tecnico narrativo multinivel** (politica
+> `technical-narrative-multilevel`) como su vista orientada a ejecucion. El
+> informe tecnico es uno de los tres informes gobernados del engagement
+> (propuesta comercial, reporte gerencial ejecutivo e informe tecnico); el
+> dossier queda enlazado desde su indice y referenciado por la propuesta y el
+> reporte gerencial para el detalle de ejecucion.
+
 ## 2. Estructura por etapa del SDLC (obligatoria)
 
 Una subcarpeta por etapa, con numeracion estable para orden determinista:

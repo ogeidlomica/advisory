@@ -11,7 +11,7 @@
       "name": "Engagement Director",
       "scope": "Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio.",
       "income": "Objetivos estrategicos del cliente, RFP CREDI10 2.0, restricciones de presupuesto y riesgo.",
-      "outcome": "Vision y mandato del engagement, aprobacion del caso de negocio (Fase 6), decisiones Go/No-Go de alto nivel.",
+      "outcome": "Vision y mandato del engagement, propuesta comercial del servicio, aprobacion del caso de negocio (Fase 6), decisiones Go/No-Go de alto nivel.",
       "verifies": [],
       "cell": "Comite de Gobierno"
     },
@@ -20,7 +20,7 @@
       "name": "Engagement Manager",
       "scope": "Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases.",
       "income": "Mandato del ED, backlog de fases, estado de entregables y gates.",
-      "outcome": "Plan de ejecucion, coordinacion RACI-V, roadmap y RAID consolidados (Fase 5).",
+      "outcome": "Plan de ejecucion, coordinacion RACI-V, reporte gerencial ejecutivo (soporte de la propuesta), roadmap y RAID consolidados (Fase 5).",
       "verifies": ["0"],
       "cell": "Comite de Gobierno"
     },
