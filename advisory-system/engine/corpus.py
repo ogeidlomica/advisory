@@ -153,19 +153,46 @@ def clean_text(text: str) -> str:
 # --------------------------------------------------------------------------- #
 
 @dataclass
+class KeyFact:
+    """A traceable key fact extracted from a document.
+
+    ``fact`` is the (cleaned) sentence/segment, ``source_filename`` ties it back
+    to the originating corpus document, and ``tokens`` lists the domain tokens
+    that caused the segment to be selected (for auditability).
+    """
+
+    fact: str
+    source_filename: str
+    tokens: List[str] = field(default_factory=list)
+
+
+@dataclass
 class Document:
     """A single piece of corpus evidence."""
 
     id: str
     filename: str
     kind: str  # 'pdf' | 'png'
-    role: str  # 'primary' | 'secondary'
+    role: str  # 'primary' | 'secondary'  -- PRIORITY metadata, never exclusion
     path: str
     size: int
     sha256: str
     extracted_text: str = ""  # pdf only
     description: str = ""  # png only
     metadata: Dict[str, object] = field(default_factory=dict)
+
+    # -- knowledge-base enrichment (populated at load time) ---------------- #
+    # raw_length / clean_length already live in ``metadata`` for backwards
+    # compatibility; these fields promote the coverage view to first-class
+    # attributes the knowledge base and phase builders can consume directly.
+    raw_length: int = 0
+    clean_length: int = 0
+    coverage_ratio: float = 0.0           # clean_length / size, bounded [0, 1]
+    coverage_band: str = "nula"           # 'alta' | 'media' | 'baja' | 'nula'
+    epistemic_flag: str = "[EPISTEMIC-VOID]"  # or '[VERIFIED-FACT]'
+    hierarchical_summary: List[str] = field(default_factory=list)
+    key_facts: List["KeyFact"] = field(default_factory=list)
+    ingestion_method: str = ""            # how the text/description was obtained
 
     @property
     def is_primary(self) -> bool:

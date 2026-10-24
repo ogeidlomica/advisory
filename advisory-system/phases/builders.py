@@ -30,6 +30,7 @@ class BuildContext:
     documents: List[object]        # Document records from the corpus
     thread: object                 # GoldenThread instance
     gate_satisfied: bool = True
+    knowledge_base: object = None  # engine.knowledge.KnowledgeBase (may be None)
 
 
 # --------------------------------------------------------------------------- #

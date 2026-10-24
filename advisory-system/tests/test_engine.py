@@ -582,5 +582,113 @@ class TestGateEvaluation(unittest.TestCase):
         )
 
 
+class TestKnowledgeBase(unittest.TestCase):
+    """FEAT-001: full 18-doc ingestion + generated knowledge base + checklist."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        loader = CorpusLoader(_REPO_ROOT)
+        docs = loader.load()
+        cls.docs = docs
+        cls.kb = KnowledgeBase.from_documents(docs)
+
+    def test_all_18_documents_ingested(self):
+        self.assertEqual(self.kb.total, 18, "deben ingerirse los 18 documentos")
+        n_pdf = sum(1 for d in self.kb.documents if d.kind == "pdf")
+        n_png = sum(1 for d in self.kb.documents if d.kind == "png")
+        self.assertEqual(n_pdf, 15)
+        self.assertEqual(n_png, 3)
+
+    def test_documents_sorted_by_filename(self):
+        names = [d.filename.lower() for d in self.kb.documents]
+        self.assertEqual(names, sorted(names), "orden determinista por filename")
+
+    def test_every_doc_has_coverage_band_and_flag(self):
+        valid_bands = {"alta", "media", "baja", "nula"}
+        valid_flags = {"[VERIFIED-FACT]", "[EPISTEMIC-VOID]"}
+        for d in self.kb.documents:
+            self.assertIn(d.coverage_band, valid_bands, d.filename)
+            self.assertIn(d.epistemic_flag, valid_flags, d.filename)
+            self.assertTrue(d.hierarchical_summary, d.filename)
+            self.assertTrue(d.sha256)
+
+    def test_primary_secondary_is_priority_not_exclusion(self):
+        # ALL docs ingested regardless of role; both roles present.
+        roles = {d.role for d in self.kb.documents}
+        self.assertEqual(roles, {"primary", "secondary"})
+        self.assertEqual(len(self.kb.documents), 18)
+
+    def test_key_facts_are_traceable_to_source(self):
+        for kf in self.kb.all_facts():
+            self.assertTrue(kf.source_filename)
+            self.assertTrue(
+                self.kb.by_filename(kf.source_filename) is not None,
+                f"la fuente {kf.source_filename} debe existir en el corpus",
+            )
+
+    def test_image_only_pdf_flagged_void_not_fabricated(self):
+        # Honest epistemic policy: any PDF without a usable text layer must be
+        # [EPISTEMIC-VOID] (never fabricated). Assert the rule, not a specific
+        # count, since extraction quality can vary.
+        from engine.knowledge import (
+            MIN_CLEAN_CHARS_FOR_VERIFIED, EPISTEMIC_VOID, VERIFIED_FACT,
+        )
+        for d in self.kb.documents:
+            if d.kind == "pdf" and d.clean_length < MIN_CLEAN_CHARS_FOR_VERIFIED:
+                self.assertEqual(d.epistemic_flag, EPISTEMIC_VOID, d.filename)
+            elif d.kind == "pdf":
+                self.assertEqual(d.epistemic_flag, VERIFIED_FACT, d.filename)
+
+    def test_write_is_deterministic_and_complete(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            kb_dir = os.path.join(tmp, "knowledge-base")
+            first = self.kb.write(kb_dir)
+            with open(os.path.join(kb_dir, "coverage-checklist.md"),
+                      encoding="utf-8") as fh:
+                checklist = fh.read()
+            with open(os.path.join(kb_dir, "README.md"), encoding="utf-8") as fh:
+                index = fh.read()
+            # README + checklist + key-facts + 18 doc summaries = 21 files.
+            self.assertEqual(len(first), 21)
+            self.assertIn("18/18 documentos procesados", checklist)
+            self.assertIn("sin muestreo", checklist)
+            self.assertIn("| 18 |", index)
+            # Second write must be byte-identical (determinism).
+            before = {p: open(p, encoding="utf-8").read() for p in first}
+            self.kb.write(kb_dir)
+            after = {p: open(p, encoding="utf-8").read() for p in first}
+            self.assertEqual(before, after, "la base de conocimiento debe ser determinista")
+
+    def test_buildcontext_exposes_knowledge_base(self):
+        from phases.builders import BuildContext
+        from engine.model import GoldenThread
+        phases = load_phases()
+        roles = roles_pkg.load_roles()
+        ctx = BuildContext(phases["0"], roles, self.docs, GoldenThread(),
+                           knowledge_base=self.kb)
+        self.assertIs(ctx.knowledge_base, self.kb)
+
+    def test_orchestrator_writes_knowledge_base_folder(self):
+        import subprocess
+        kb_dir = os.path.join(_REPO_ROOT, "knowledge-base")
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        self.assertTrue(os.path.isdir(kb_dir))
+        self.assertTrue(os.path.isfile(os.path.join(kb_dir, "README.md")))
+        self.assertTrue(os.path.isfile(os.path.join(kb_dir, "coverage-checklist.md")))
+        self.assertTrue(os.path.isfile(os.path.join(kb_dir, "key-facts.md")))
+        self.assertTrue(os.path.isdir(os.path.join(kb_dir, "documents")))
+        docs = [f for f in os.listdir(os.path.join(kb_dir, "documents"))
+                if f.endswith(".md")]
+        self.assertEqual(len(docs), 18)
+
+
 if __name__ == "__main__":
     unittest.main()

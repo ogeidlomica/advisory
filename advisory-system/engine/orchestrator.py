@@ -17,6 +17,7 @@ from typing import Dict, List, Optional
 
 from engine.corpus import CorpusLoader
 from engine.gating import evaluate_gate
+from engine.knowledge import KnowledgeBase
 from engine.model import GoldenThread, Phase, raci_v_for
 from engine.phases import PHASE_ORDER, load_phases
 from phases import build_readme
@@ -39,9 +40,15 @@ class PhaseResult:
 class RunSummary:
     results: List[PhaseResult] = field(default_factory=list)
     readme_path: Optional[str] = None
+    kb_dir: Optional[str] = None
+    kb_file_count: int = 0
 
     def log_lines(self) -> List[str]:
         out = []
+        if self.kb_dir:
+            out.append(
+                f"[Base de Conocimiento] {self.kb_file_count} archivos -> {self.kb_dir}"
+            )
         for r in self.results:
             out.append(
                 f"[{r.phase_name}] roles={','.join(r.roles_engaged)} "
@@ -53,18 +60,34 @@ class RunSummary:
 
 
 class AdvisoryOrchestrator:
-    def __init__(self, corpus: CorpusLoader, out_dir: str):
+    def __init__(self, corpus: CorpusLoader, out_dir: str,
+                 kb_dir: Optional[str] = None):
         self.corpus = corpus
         self.out_dir = os.path.abspath(out_dir)
+        # The knowledge base lives at the repository root (sibling of
+        # advisory-system/ and of the reports folder). Default: parent of
+        # out_dir, i.e. the repo root, under knowledge-base/.
+        if kb_dir is None:
+            kb_dir = os.path.join(os.path.dirname(self.out_dir), "knowledge-base")
+        self.kb_dir = os.path.abspath(kb_dir)
         self.roles = roles_pkg.load_roles()
         self.phases: Dict[str, Phase] = load_phases()
         self.thread = GoldenThread()
+        # Full 18-doc ingestion -> deterministic knowledge base. Built once so
+        # every phase builder sees the same enriched documents.
+        self.knowledge_base = KnowledgeBase.from_documents(self.corpus.documents)
+        self.kb_paths: List[str] = []
 
     # -- public API --------------------------------------------------------- #
     def run(self, phase: str = "all") -> RunSummary:
         os.makedirs(self.out_dir, exist_ok=True)
         summary = RunSummary()
         if phase == "all":
+            # Generate the knowledge base + coverage checklist before the
+            # phase reports so downstream builders consume a populated KB.
+            self.kb_paths = self.knowledge_base.write(self.kb_dir)
+            summary.kb_dir = self.kb_dir
+            summary.kb_file_count = len(self.kb_paths)
             for pid in PHASE_ORDER:
                 summary.results.append(self._run_phase(pid))
             summary.readme_path = self._write_readme()
@@ -92,6 +115,7 @@ class AdvisoryOrchestrator:
             documents=self.corpus.documents,
             thread=self.thread,
             gate_satisfied=True,
+            knowledge_base=self.knowledge_base,
         )
         builder = phase.builder
         if builder is None:
