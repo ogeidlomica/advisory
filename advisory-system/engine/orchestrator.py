@@ -19,8 +19,9 @@ from engine.corpus import CorpusLoader
 from engine.gating import evaluate_gate
 from engine.knowledge import KnowledgeBase
 from engine.model import GoldenThread, Phase, raci_v_for
-from engine.phases import PHASE_ORDER, load_phases
+from engine.phases import CATALOG_FILENAME, PHASE_ORDER, load_phases
 from phases import build_readme
+from phases import catalog as catalog_mod
 from phases.builders import BuildContext
 
 import roles as roles_pkg
@@ -42,6 +43,7 @@ class RunSummary:
     readme_path: Optional[str] = None
     kb_dir: Optional[str] = None
     kb_file_count: int = 0
+    catalog_path: Optional[str] = None
 
     def log_lines(self) -> List[str]:
         out = []
@@ -54,6 +56,8 @@ class RunSummary:
                 f"[{r.phase_name}] roles={','.join(r.roles_engaged)} "
                 f"verifier={r.verifier} | {r.gate_verdict} -> {r.output_path}"
             )
+        if self.catalog_path:
+            out.append(f"[Catalogo HU/Gherkin] -> {self.catalog_path}")
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
         return out
@@ -90,6 +94,9 @@ class AdvisoryOrchestrator:
             summary.kb_file_count = len(self.kb_paths)
             for pid in PHASE_ORDER:
                 summary.results.append(self._run_phase(pid))
+            # Auxiliary exhaustive HU/Gherkin catalog (FEAT-003), complement of
+            # Phase 4, written deterministically from phases/modules.py.
+            summary.catalog_path = self._write_catalog()
             summary.readme_path = self._write_readme()
         else:
             if phase not in self.phases:
@@ -171,6 +178,13 @@ class AdvisoryOrchestrator:
         if body.endswith("\n") and not patched_body.endswith("\n"):
             patched_body += "\n"
         return patched_body
+
+    def _write_catalog(self) -> str:
+        body = catalog_mod.build(self.knowledge_base)
+        path = os.path.join(self.out_dir, CATALOG_FILENAME)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        return path
 
     def _write_readme(self) -> str:
         body = build_readme(self.phases, self.roles, self.corpus.documents)

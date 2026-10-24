@@ -757,5 +757,156 @@ class TestSkillsLoader(unittest.TestCase):
         self.assertEqual(missing.ai_opportunities(), [])
 
 
+class TestModulesSourceOfTruth(unittest.TestCase):
+    """FEAT-003: the declarative module universe is the single source of truth."""
+
+    def test_full_module_universe_declared(self):
+        from phases import modules as mods
+        # The full Credi10 universe must be declared (no sampling).
+        self.assertGreaterEqual(mods.module_count(), 17)
+        self.assertEqual(mods.module_count(), len(mods.MODULES))
+
+    def test_every_module_has_story_with_happy_and_edge(self):
+        from phases.modules import MODULES
+        for m in MODULES:
+            self.assertGreaterEqual(
+                len(m.stories), 1, f"{m.id} debe tener >= 1 historia")
+            for s in m.stories:
+                self.assertIsNotNone(s.happy, f"{s.id} debe tener happy path")
+                self.assertIsNotNone(s.edge, f"{s.id} debe tener caso borde")
+                self.assertEqual(s.happy.tipo, "happy")
+                self.assertEqual(s.edge.tipo, "edge")
+                # Gherkin steps present.
+                self.assertTrue(s.happy.dado and s.happy.cuando and s.happy.entonces)
+                self.assertTrue(s.edge.dado and s.edge.cuando and s.edge.entonces)
+
+    def test_story_ids_unique_and_traceable(self):
+        from phases.modules import all_story_ids, all_module_ids
+        sids = all_story_ids()
+        self.assertEqual(len(sids), len(set(sids)), "HU ids unicos")
+        mids = all_module_ids()
+        self.assertEqual(len(mids), len(set(mids)), "MOD ids unicos")
+
+    def test_key_modules_present(self):
+        from phases.modules import MODULES
+        names = " | ".join(m.name for m in MODULES)
+        for token in ("Plataforma Credi10", "CrossCore", "Inspektor",
+                      "Datacredito", "Aplicacion ADMIN", "GenerarPagos",
+                      "Corte de Cartera", "Link de Recaudo", "Portal",
+                      "Boton E-commerce", "Captura Foto",
+                      "Atencion al Cliente", "Llamada Predictiva",
+                      "SMS / WhatsApp", "RCL y RCR", "UnoEE / Siesa",
+                      "Fidelizacion"):
+            self.assertIn(token, names, f"debe declararse el modulo {token}")
+
+
+class TestCatalogReport(unittest.TestCase):
+    """FEAT-003: exhaustive HU/Gherkin catalog render (04b)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from phases import catalog
+        cls.body = catalog.build(knowledge_base=None)
+
+    def test_structural_contract(self):
+        self.assertIn("```mermaid", self.body)
+        self.assertTrue(
+            any(line.startswith("|") for line in self.body.splitlines()))
+        self.assertTrue(any(tag in self.body for tag in (
+            "[VERIFIED-FACT]", "[DOC-ASSUMPTION]",
+            "[DOC-CONFLICT]", "[EPISTEMIC-VOID]")))
+        self.assertIn("Veredicto QG-4b", self.body)
+
+    def test_coverage_equals_declared_count(self):
+        from phases.modules import module_count
+        rendered = self.body.count("\n### MOD-")
+        self.assertEqual(rendered, module_count(),
+                         "el catalogo debe renderizar todos los modulos declarados")
+
+    def test_every_module_has_gherkin_steps(self):
+        # 17 modulos x 2 escenarios -> 34 de cada palabra clave Gherkin.
+        from phases.modules import story_count
+        expected = story_count() * 2
+        for kw in ("Dado ", "Cuando ", "Entonces "):
+            self.assertGreaterEqual(self.body.count(kw), expected,
+                                    f"faltan pasos Gherkin '{kw.strip()}'")
+
+    def test_verdict_is_go(self):
+        self.assertIn("Veredicto QG-4b:** GO", self.body)
+
+
+class TestPhase4Deepening(unittest.TestCase):
+    """FEAT-003: deeper TO-BE architecture + AI catalog render in Phase 4."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+        phases = load_phases()
+        roles = roles_pkg.load_roles()
+        docs = CorpusLoader(_REPO_ROOT).load()
+        kb = KnowledgeBase.from_documents(docs)
+        ctx = BuildContext(phases["4"], roles, docs, GoldenThread(),
+                           knowledge_base=kb)
+        cls.body = phases["4"].builder(ctx)
+
+    def test_c4_three_levels_tobe(self):
+        for lvl in ("C4 Nivel 1 (TO-BE)", "C4 Nivel 2 (TO-BE)",
+                    "C4 Nivel 3 (TO-BE)"):
+            self.assertIn(lvl, self.body)
+
+    def test_at_least_six_adrs(self):
+        for adr in ("ADR-001", "ADR-002", "ADR-003", "ADR-004", "ADR-005",
+                    "ADR-006"):
+            self.assertIn(adr, self.body)
+
+    def test_multiple_erds_per_bounded_context(self):
+        self.assertGreaterEqual(self.body.count("erDiagram"), 5,
+                                "debe haber un ERD por bounded context")
+
+    def test_openapi_and_asyncapi_contracts(self):
+        self.assertIn("openapi: 3.0.3", self.body)
+        self.assertIn("asyncapi: 2.6.0", self.body)
+        # Siesa Data Services + cobranza channels sketched.
+        self.assertIn("Data Services sobre Siesa", self.body)
+        self.assertIn("cobranza/contacto-realizado", self.body)
+
+    def test_ai_catalog_rendered_from_skill(self):
+        # Both tracks with entries from the declarative skill (FEAT-002).
+        self.assertIn("IA-como-producto", self.body)
+        self.assertIn("IA-como-acelerador-de-construccion", self.body)
+        for aid in ("AIP-001", "AIP-006", "AIB-001", "AIB-003"):
+            self.assertIn(aid, self.body)
+
+    def test_kb_citation_present(self):
+        self.assertIn("Base de Conocimiento", self.body)
+        self.assertIn("RFP_CREDI10_2_0.pdf", self.body)
+
+    def test_catalog_crossreference(self):
+        self.assertIn("04b-catalogo-historias.md", self.body)
+
+
+class TestPipelineProducesCatalog(unittest.TestCase):
+    """FEAT-003: the full pipeline writes the catalog file deterministically."""
+
+    def test_quickstart_writes_catalog(self):
+        import subprocess
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        from engine.phases import CATALOG_FILENAME
+        path = os.path.join(_REPO_ROOT, "advisory-credi10-2.0", CATALOG_FILENAME)
+        self.assertTrue(os.path.isfile(path), "el catalogo debe existir")
+        with open(path, encoding="utf-8") as fh:
+            content = fh.read()
+        self.assertIn("Veredicto QG-4b", content)
+        self.assertIn("```gherkin", content)
+
+
 if __name__ == "__main__":
     unittest.main()

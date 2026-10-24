@@ -241,7 +241,19 @@ def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: 
             f"{', '.join(ph.deliverables)} | {', '.join(ph.leaders)} | "
             f"{ph.verifier} | {ph.gate.id} |"
         )
+    from engine.phases import CATALOG_FILENAME
     lines += [
+        "",
+        "## Catalogo complementario",
+        "",
+        "Ademas de los 7 informes por fase, el motor genera un catalogo "
+        "**exhaustivo de Historias de Usuario + BDD/Gherkin** que cubre TODO el "
+        "universo de modulos de Credi10 (sin muestreo), complemento de la Fase 4:",
+        "",
+        f"- [`{CATALOG_FILENAME}`]({CATALOG_FILENAME}): HU + criterios Gherkin "
+        "(happy path + casos borde) por modulo, desde la fuente unica de verdad "
+        "`advisory-system/phases/modules.py` (reutilizada por la estimacion por "
+        "modulo de la Fase 5).",
         "",
         "## Hilo Dorado (F1 -> F6)",
         "",

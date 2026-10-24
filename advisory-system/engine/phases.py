@@ -28,6 +28,11 @@ REPORT_FILENAMES = {
 
 PHASE_ORDER = ["0", "1", "2", "3", "4", "5", "6"]
 
+# Auxiliary generated catalog (FEAT-003): the exhaustive HU/Gherkin catalog for
+# ALL Credi10 modules. It is a complement of Phase 4 (not a stage-gated phase),
+# written by the orchestrator when running the full pipeline.
+CATALOG_FILENAME = "04b-catalogo-historias.md"
+
 
 def _gates() -> Dict[str, Gate]:
     return {

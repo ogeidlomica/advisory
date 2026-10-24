@@ -35,6 +35,12 @@ Zero-Drift organiza el advisory como un **Comite de Gobierno** mas **3 Celulas**
 | Fase 5 - Roadmap, Estimacion y RAID | [05-roadmap-estimacion-raid.md](05-roadmap-estimacion-raid.md) | E5.1, E5.2, E5.3 | EM, SA, PM, ORG | AM | QG-5 |
 | Fase 6 - Caso de Negocio | [06-caso-de-negocio.md](06-caso-de-negocio.md) | E6.1, E6.2, E6.3 | ED, FIN, EA | AM | QG-6 |
 
+## Catalogo complementario
+
+Ademas de los 7 informes por fase, el motor genera un catalogo **exhaustivo de Historias de Usuario + BDD/Gherkin** que cubre TODO el universo de modulos de Credi10 (sin muestreo), complemento de la Fase 4:
+
+- [`04b-catalogo-historias.md`](04b-catalogo-historias.md): HU + criterios Gherkin (happy path + casos borde) por modulo, desde la fuente unica de verdad `advisory-system/phases/modules.py` (reutilizada por la estimacion por modulo de la Fase 5).
+
 ## Hilo Dorado (F1 -> F6)
 
 La trazabilidad end-to-end encadena: Driver (F1) -> Capability (F1) -> Benchmark (F2) -> Gap (F3) -> Reliever (F3) -> ABB (F3.5) -> SBB (F4) -> Ola/WAV (F5) -> ROI/Outcome (F6).

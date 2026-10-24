@@ -23,6 +23,8 @@ from __future__ import annotations
 
 from typing import List
 
+from engine.skills import load_ai_catalog
+
 
 # --------------------------------------------------------------------------- #
 # Hilo Dorado - SBBs (SBB-xxx) que referencian ABBs de la Fase 3.5.
@@ -42,6 +44,10 @@ SBBS = [
      "ABB-005", "CloudWatch + stack de observabilidad"),
     ("SBB-006", "Migracion de runtime .NET Framework 4.8 / .NET Core 3.1 -> "
      ".NET 8", "ABB-006", ".NET 8 / contenedores"),
+    ("SBB-007", "Fuente unica de verdad por dominio (consolidar las +200 BDs "
+     "duplicadas)", "ABB-004", "SQL Server consolidado + dominios de datos"),
+    ("SBB-008", "Estrategia cloud AWS (VPC, ALB/WAF, escalamiento, "
+     "contenedores)", "ABB-006", "AWS (VPC, ALB, WAF, ECS/EKS)"),
 ]
 
 
@@ -172,7 +178,43 @@ def _adrs() -> str:
         "- **Decision:** Migrar los servicios a **.NET 8** contenerizado "
         "(SBB-006) y retirar Wordpress/XAMPP del canal B2C.\n"
         "- **Consecuencias:** Cierra brechas de soporte y licenciamiento; implica "
-        "esfuerzo de migracion por ola. Liga a DRV-005/DRV-004.\n"
+        "esfuerzo de migracion por ola. Liga a DRV-005/DRV-004.\n\n"
+        "### ADR-004: WSO2 como plataforma de API Management frente a "
+        "alternativas\n\n"
+        "- **Estado:** Aceptada.\n"
+        "- **Contexto:** El assessment analiza el ecosistema actual y recomienda "
+        "una capa unica de gestion de APIs; existen alternativas (Kong, AWS API "
+        "Gateway/MuleSoft, Apigee) [DOC-ASSUMPTION].\n"
+        "- **Decision:** Adoptar **WSO2 API Platform + Integration Platform** "
+        "(SBB-001) por continuidad con la recomendacion del assessment y por "
+        "cubrir API Management + integracion + Data Services en una sola "
+        "plataforma; se mantiene la decision recalibrable si el cliente prefiere "
+        "una alternativa cloud-native.\n"
+        "- **Consecuencias:** Minimiza fragmentacion de herramientas; crea "
+        "dependencia de una plataforma que debe operarse y licenciarse. Liga a "
+        "DRV-004.\n\n"
+        "### ADR-005: Fuente unica de verdad por dominio (consolidar +200 BDs)\n\n"
+        "- **Estado:** Aceptada.\n"
+        "- **Contexto:** Existen +200 bases de datos duplicadas/inconsistentes a "
+        "nivel grupo con logica repetida y controles manuales en Excel "
+        "(GAP-003).\n"
+        "- **Decision:** Establecer una **fuente unica de verdad por dominio** "
+        "(SBB-007), con dominios de datos con duenio claro y los demas sistemas "
+        "consumiendo via API/eventos en lugar de replicar BDs.\n"
+        "- **Consecuencias:** Reduce inconsistencia y reconciliacion manual; "
+        "requiere migracion/consolidacion de datos y gobierno de dominios. Liga "
+        "a DRV-002.\n\n"
+        "### ADR-006: Estrategia cloud en AWS para el TO-BE\n\n"
+        "- **Estado:** Aceptada.\n"
+        "- **Contexto:** La infraestructura AS-IS usa AWS (VPC, EC2, ALB/WAF "
+        "segun los diagramas), con EC2 estaticos y un WS lento como cuello de "
+        "botella (GAP-002).\n"
+        "- **Decision:** Desplegar los servicios de dominio .NET 8 contenerizados "
+        "en **AWS** (VPC, ALB, WAF, orquestacion de contenedores) con "
+        "escalamiento elastico y observabilidad (SBB-008, SBB-005), manteniendo "
+        "el costo de infraestructura controlado (DRV-003).\n"
+        "- **Consecuencias:** Habilita escalamiento y resiliencia; exige IaC y "
+        "disciplina de FinOps para no degradar costo. Liga a DRV-003/DRV-004.\n"
     )
 
 
@@ -232,6 +274,125 @@ def _erd() -> str:
         "        string id_pago PK\n"
         "        string id_link FK\n"
         "        string referencia_payu\n"
+        "    }\n"
+        "```\n"
+    )
+
+
+def _erd_originacion() -> str:
+    return (
+        "```mermaid\n"
+        "erDiagram\n"
+        "    CLIENTE ||--o{ SOLICITUD : origina\n"
+        "    SOLICITUD ||--|| ESTUDIO_CREDITO : evalua\n"
+        "    ESTUDIO_CREDITO ||--o{ CONSULTA_BURO : encadena\n"
+        "    SOLICITUD ||--o{ SOPORTE_FOTO : adjunta\n"
+        "    CLIENTE {\n"
+        "        string documento PK\n"
+        "        string nombre\n"
+        "    }\n"
+        "    SOLICITUD {\n"
+        "        string id_solicitud PK\n"
+        "        string documento FK\n"
+        "        string estado\n"
+        "    }\n"
+        "    ESTUDIO_CREDITO {\n"
+        "        string id_estudio PK\n"
+        "        string id_solicitud FK\n"
+        "        string decision\n"
+        "        int score\n"
+        "    }\n"
+        "    CONSULTA_BURO {\n"
+        "        string id_consulta PK\n"
+        "        string id_estudio FK\n"
+        "        string buro\n"
+        "        string resultado\n"
+        "    }\n"
+        "    SOPORTE_FOTO {\n"
+        "        string id_soporte PK\n"
+        "        string id_solicitud FK\n"
+        "        string uri\n"
+        "    }\n"
+        "```\n"
+    )
+
+
+def _erd_cartera() -> str:
+    return (
+        "```mermaid\n"
+        "erDiagram\n"
+        "    OBLIGACION ||--o{ CORTE_CARTERA : consolida\n"
+        "    CORTE_CARTERA ||--o{ ESTADO_MORA : clasifica\n"
+        "    OBLIGACION {\n"
+        "        string id_obligacion PK\n"
+        "        string documento FK\n"
+        "        decimal saldo\n"
+        "    }\n"
+        "    CORTE_CARTERA {\n"
+        "        string id_corte PK\n"
+        "        string periodo\n"
+        "        decimal saldo_total\n"
+        "    }\n"
+        "    ESTADO_MORA {\n"
+        "        string id_obligacion FK\n"
+        "        string id_corte FK\n"
+        "        int dias_mora\n"
+        "        string tramo\n"
+        "    }\n"
+        "```\n"
+    )
+
+
+def _erd_cobranza() -> str:
+    return (
+        "```mermaid\n"
+        "erDiagram\n"
+        "    OBLIGACION ||--o{ CAMPANA_COBRANZA : incluye\n"
+        "    CAMPANA_COBRANZA ||--o{ CONTACTO : ejecuta\n"
+        "    CONTACTO ||--o{ PROMESA_PAGO : genera\n"
+        "    CAMPANA_COBRANZA {\n"
+        "        string id_campana PK\n"
+        "        string canal\n"
+        "        string segmento\n"
+        "    }\n"
+        "    CONTACTO {\n"
+        "        string id_contacto PK\n"
+        "        string id_campana FK\n"
+        "        string id_obligacion FK\n"
+        "        string resultado\n"
+        "    }\n"
+        "    PROMESA_PAGO {\n"
+        "        string id_promesa PK\n"
+        "        string id_contacto FK\n"
+        "        decimal monto\n"
+        "        string fecha\n"
+        "    }\n"
+        "```\n"
+    )
+
+
+def _erd_cliente_b2c() -> str:
+    return (
+        "```mermaid\n"
+        "erDiagram\n"
+        "    CLIENTE ||--o{ SESION_PORTAL : accede\n"
+        "    CLIENTE ||--o{ OBLIGACION : posee\n"
+        "    CLIENTE ||--o{ PEDIDO_ECOMMERCE : compra\n"
+        "    SESION_PORTAL {\n"
+        "        string id_sesion PK\n"
+        "        string documento FK\n"
+        "        string canal\n"
+        "    }\n"
+        "    PEDIDO_ECOMMERCE {\n"
+        "        string id_pedido PK\n"
+        "        string documento FK\n"
+        "        decimal monto\n"
+        "        string estado\n"
+        "    }\n"
+        "    OBLIGACION {\n"
+        "        string id_obligacion PK\n"
+        "        string documento FK\n"
+        "        decimal saldo\n"
         "    }\n"
         "```\n"
     )
@@ -298,6 +459,77 @@ def _asyncapi_snippet() -> str:
     )
 
 
+def _openapi_siesa_snippet() -> str:
+    return (
+        "```yaml\n"
+        "openapi: 3.0.3\n"
+        "info:\n"
+        "  title: Credi10 2.0 - Data Services sobre Siesa/UnoEE (SBB-002)\n"
+        "  version: 1.0.0\n"
+        "paths:\n"
+        "  /siesa/obligaciones/{idObligacion}:\n"
+        "    get:\n"
+        "      summary: Lee una obligacion via Data Service gobernado (NO acceso directo a BD)\n"
+        "      parameters:\n"
+        "        - name: idObligacion\n"
+        "          in: path\n"
+        "          required: true\n"
+        "          schema: { type: string }\n"
+        "      responses:\n"
+        "        '200':\n"
+        "          description: Obligacion\n"
+        "          content:\n"
+        "            application/json:\n"
+        "              schema:\n"
+        "                type: object\n"
+        "                properties:\n"
+        "                  idObligacion: { type: string }\n"
+        "                  saldo: { type: number }\n"
+        "        '503':\n"
+        "          description: Data Service de Siesa no disponible (reintentar via eventos)\n"
+        "```\n"
+    )
+
+
+def _asyncapi_cobranza_snippet() -> str:
+    return (
+        "```yaml\n"
+        "asyncapi: 2.6.0\n"
+        "info:\n"
+        "  title: Credi10 2.0 - Eventos de Cobranza multicanal\n"
+        "  version: 1.0.0\n"
+        "channels:\n"
+        "  cobranza/contacto-realizado:\n"
+        "    subscribe:\n"
+        "      message:\n"
+        "        name: ContactoRealizado\n"
+        "        payload:\n"
+        "          type: object\n"
+        "          properties:\n"
+        "            idObligacion: { type: string }\n"
+        "            canal: { type: string, enum: [SMS, WhatsApp, Email, Llamada] }\n"
+        "            resultado: { type: string }\n"
+        "            idCampana: { type: string }\n"
+        "```\n"
+    )
+
+
+def _api_contract_index_table() -> str:
+    rows = [
+        "| Contrato | Tipo | Integracion | SBB |",
+        "| --- | --- | --- | --- |",
+        "| POST /estudio-credito | OpenAPI (REST) | CrossCore/Inspektor/"
+        "Datacredito | SBB-001, SBB-004 |",
+        "| GET /siesa/obligaciones/{id} | OpenAPI (REST) | Data Services Siesa/"
+        "UnoEE | SBB-002 |",
+        "| recaudo/pago-aplicado | AsyncAPI (eventos) | PayU -> recaudo | "
+        "SBB-003 |",
+        "| cobranza/contacto-realizado | AsyncAPI (eventos) | Cobranza "
+        "multicanal | SBB-003 |",
+    ]
+    return "\n".join(rows)
+
+
 def _migration_table() -> str:
     rows = [
         "| Elemento legado | Estrategia de migracion | SBB destino |",
@@ -335,6 +567,70 @@ def _bpmn_tobe() -> str:
         "    R --> X\n"
         "```\n"
     )
+
+
+def _bpmn_recaudo_cobranza() -> str:
+    return (
+        "```mermaid\n"
+        "flowchart LR\n"
+        "    A([Corte de cartera]) --> B{Obligacion en mora?}\n"
+        "    B -- No --> Z([Fin])\n"
+        "    B -- Si --> C[Segmentar y priorizar cartera]\n"
+        "    C --> D[Scheduler de cobranza multicanal]\n"
+        "    D --> E[SMS / WhatsApp / Email]\n"
+        "    D --> F[Llamada predictiva WOLKVOX]\n"
+        "    E --> G[Evento ContactoRealizado al bus SBB-003]\n"
+        "    F --> G\n"
+        "    G --> H{Promesa de pago?}\n"
+        "    H -- Si --> I[Link de Recaudo -> PayU]\n"
+        "    H -- No --> C\n"
+        "    I --> Z\n"
+        "```\n"
+    )
+
+
+def _bpmn_desembolso_facturacion() -> str:
+    return (
+        "```mermaid\n"
+        "flowchart LR\n"
+        "    A([Estudio APROBADO]) --> B[Desembolso]\n"
+        "    B --> C[Generar RCL/RCR en UnoEE]\n"
+        "    C --> D[Timbrado Numrot]\n"
+        "    D --> E{Timbrado OK?}\n"
+        "    E -- Si --> F[Enviar a cliente y DIAN]\n"
+        "    E -- No --> G[Reintentar via eventos - nunca BD directa ADR-002]\n"
+        "    G --> D\n"
+        "    F --> H([Fin])\n"
+        "```\n"
+    )
+
+
+def _ai_catalog_tables():
+    """Render the AI opportunities catalog from the declarative skill (FEAT-002).
+
+    Consumes ``engine.skills.load_ai_catalog()`` so the catalog is DATA, not
+    hardcoded. Returns ``(product_table, accelerator_table, entries)``. If the
+    skill is absent the loader degrades to an empty list and we emit an honest
+    [EPISTEMIC-VOID] note instead of fabricating.
+    """
+    entries = load_ai_catalog()
+    product = [e for e in entries if e.track == "ai-as-product"]
+    accel = [e for e in entries if e.track == "ai-as-build-accelerator"]
+
+    def _table(rows_src):
+        rows = [
+            "| ID | Caso de uso | Modulo | Datos requeridos | Viabilidad | "
+            "Gancho al roadmap |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+        for e in rows_src:
+            rows.append(
+                f"| {e.id} | {e.name}: {e.use_case} | {e.module} | "
+                f"{e.required_data} | {e.viability} | {e.roadmap_hook} |"
+            )
+        return "\n".join(rows)
+
+    return _table(product), _table(accel), entries
 
 
 def _service_blueprint_table() -> str:
@@ -458,9 +754,42 @@ def _gate_block(ctx) -> str:
     )
 
 
+def _kb_citation(ctx) -> str:
+    """Cita la Base de Conocimiento (FEAT-001) para trazar los hechos usados."""
+    kb = getattr(ctx, "knowledge_base", None)
+    if kb is None:
+        return (
+            "> **Trazabilidad:** la Base de Conocimiento no esta disponible en "
+            "este contexto de build [EPISTEMIC-VOID]."
+        )
+    try:
+        total = kb.total
+    except Exception:
+        return (
+            "> **Trazabilidad:** la Base de Conocimiento no esta disponible en "
+            "este contexto de build [EPISTEMIC-VOID]."
+        )
+    cited = [
+        "RFP_CREDI10_2_0.pdf",
+        "WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+        "Originacion_CrossCore.pdf",
+        "LinkDePagos.pdf",
+    ]
+    found = [c for c in cited if kb.by_filename(c) is not None]
+    return (
+        f"> **Trazabilidad (Base de Conocimiento):** el diseno TO-BE se "
+        f"fundamenta en la ingesta COMPLETA de **{total}** documentos "
+        f"(`knowledge-base/`). Fuentes principales de esta fase: "
+        + ", ".join(f"`{c}`" for c in found)
+        + ". Las cifras/umbrales sin dato explicito en el corpus se marcan "
+        "[DOC-ASSUMPTION]."
+    )
+
+
 def build(ctx) -> str:
     register_thread_ids(ctx)
     phase = ctx.phase
+    ai_product, ai_accel, ai_entries = _ai_catalog_tables()
     parts: List[str] = [
         f"# {phase.name}",
         "",
@@ -478,21 +807,33 @@ def build(ctx) -> str:
         "referenciando un **ABB (ABB-xxx)** de la Fase 3.5 y ligado a un Driver "
         "(DRV) del RFP.",
         "",
+        _kb_citation(ctx),
+        "",
+        "> **Catalogo exhaustivo de Historias de Usuario + Gherkin:** la "
+        "cobertura completa (sin muestreo) de TODOS los modulos de Credi10 vive "
+        "en el artefacto complementario "
+        "[`04b-catalogo-historias.md`](04b-catalogo-historias.md), generado "
+        "desde la fuente unica de verdad `advisory-system/phases/modules.py`.",
+        "",
         "## E4.1 - Mapeo ABB -> SBB, Arquitectura C4, ADRs y NFRs",
         "",
         "### Mapeo ABB -> SBB (Hilo Dorado)",
         "",
         _abb_sbb_table(),
         "",
-        "### C4 Nivel 1 - Contexto",
+        "> Las vistas C4 siguientes son el **TO-BE** de Credi10 2.0 "
+        "(complementan las transcripciones AS-IS de contexto/despliegue/AWS de "
+        "la Fase 1).",
+        "",
+        "### C4 Nivel 1 (TO-BE) - Contexto",
         "",
         _c4_context(),
         "",
-        "### C4 Nivel 2 - Contenedores",
+        "### C4 Nivel 2 (TO-BE) - Contenedores",
         "",
         _c4_container(),
         "",
-        "### C4 Nivel 3 - Componentes (Estudio de Credito)",
+        "### C4 Nivel 3 (TO-BE) - Componentes (Estudio de Credito)",
         "",
         _c4_component(),
         "",
@@ -506,27 +847,73 @@ def build(ctx) -> str:
         "",
         "## E4.2 - Modelo de Datos (ERD/DDD), Contratos y Migracion",
         "",
-        "### Modelo de datos - contexto Recaudo/Pagos",
+        "Un **ERD por bounded context** (DDD), complementando el modelo "
+        "Recaudo/Pagos. Son artefactos de especificacion embebidos "
+        "(documentacion para la siguiente etapa), no esquemas ejecutables.",
+        "",
+        "### Modelo de datos - contexto Originacion / Estudio de Credito",
+        "",
+        _erd_originacion(),
+        "",
+        "### Modelo de datos - contexto Recaudo / Pagos",
         "",
         _erd(),
         "",
-        "### Contrato OpenAPI - POST /estudio-credito",
+        "### Modelo de datos - contexto Corte / Cartera",
+        "",
+        _erd_cartera(),
+        "",
+        "### Modelo de datos - contexto Cobranza",
+        "",
+        _erd_cobranza(),
+        "",
+        "### Modelo de datos - contexto Cliente / B2C",
+        "",
+        _erd_cliente_b2c(),
+        "",
+        "### Contratos de API (indice)",
+        "",
+        "Contratos **OpenAPI (REST)** y **AsyncAPI (eventos)** esbozados para "
+        "las integraciones clave. Son **artefactos de especificacion** "
+        "embebidos como snippets en este informe (specs de diseno para la "
+        "siguiente etapa), NO codigo ejecutable ni archivos de API "
+        "independientes.",
+        "",
+        _api_contract_index_table(),
+        "",
+        "### Contrato OpenAPI - POST /estudio-credito (CrossCore/Inspektor/Datacredito)",
         "",
         _openapi_snippet(),
         "",
-        "### Contrato AsyncAPI - evento de recaudo",
+        "### Contrato OpenAPI - Data Services sobre Siesa/UnoEE",
+        "",
+        _openapi_siesa_snippet(),
+        "",
+        "### Contrato AsyncAPI - evento de recaudo (PayU)",
         "",
         _asyncapi_snippet(),
+        "",
+        "### Contrato AsyncAPI - eventos de cobranza multicanal",
+        "",
+        _asyncapi_cobranza_snippet(),
         "",
         "### Estrategia de migracion",
         "",
         _migration_table(),
         "",
-        "## E4.3 - Proceso BPMN To-Be, Service Blueprint y UX",
+        "## E4.3 - Procesos BPMN To-Be, Service Blueprint y UX",
         "",
         "### BPMN To-Be (estudio de credito -> recaudo)",
         "",
         _bpmn_tobe(),
+        "",
+        "### BPMN To-Be (recaudo -> cobranza multicanal)",
+        "",
+        _bpmn_recaudo_cobranza(),
+        "",
+        "### BPMN To-Be (desembolso -> facturacion RCL/RCR)",
+        "",
+        _bpmn_desembolso_facturacion(),
         "",
         "### Service Blueprint",
         "",
@@ -539,10 +926,35 @@ def build(ctx) -> str:
         "",
         "## E4.4 - Paquete Spec-Driven (Historias BDD / Gherkin)",
         "",
-        "Historias en Gherkin espanol (Dado/Cuando/Entonces) que cubren el "
-        "happy path y los casos borde del Exception Storming (EX-01, EX-04):",
+        "Historia representativa en Gherkin espanol (Dado/Cuando/Entonces) que "
+        "cubre el happy path y los casos borde del Exception Storming (EX-01, "
+        "EX-04). El **catalogo EXHAUSTIVO** con una historia (happy + borde) "
+        "para CADA modulo del universo Credi10 esta en "
+        "[`04b-catalogo-historias.md`](04b-catalogo-historias.md):",
         "",
         _gherkin(),
+        "",
+        "## E4.6 - Catalogo de Oportunidades de IA (skill declarativo)",
+        "",
+        "Las oportunidades de IA se modelan como **skill declarativo** "
+        "(`.kiro/skills/ai-opportunities-catalog`) y se renderizan aqui "
+        "consumiendo `engine.skills.load_ai_catalog()` (NO hardcodeadas). "
+        "Dos pistas: **IA-como-producto** e **IA-como-acelerador-de-"
+        "construccion**. Las viabilidades/beneficios especulativos van "
+        "[DOC-ASSUMPTION]; donde el corpus no da base se marca [EPISTEMIC-VOID].",
+        "",
+        "### IA-como-producto",
+        "",
+        (ai_product if ai_entries else
+         "_Catalogo de IA no disponible (skill ausente) [EPISTEMIC-VOID]._"),
+        "",
+        "### IA-como-acelerador-de-construccion (rol AIA)",
+        "",
+        (ai_accel if ai_entries else
+         "_Catalogo de IA no disponible (skill ausente) [EPISTEMIC-VOID]._"),
+        "",
+        f"> Total de oportunidades catalogadas: **{len(ai_entries)}** "
+        f"(skill declarativo versionado, recalibrable sin tocar el motor).",
         "",
         "## E4.5 - Acta de Certificacion Dry-Run y Threat Modeling",
         "",
