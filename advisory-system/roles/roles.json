@@ -1,0 +1,163 @@
+{
+  "committee": ["ED", "EM", "AM"],
+  "cells": {
+    "Celula 1 - Discovery": ["EA", "BA", "PIA", "SME", "TDA", "DRE"],
+    "Celula 2 - Diseno": ["SA", "DA", "PM", "UX", "AIA"],
+    "Celula 3 - Valor y Habilitacion": ["FIN", "SEC", "ORG"]
+  },
+  "roles": [
+    {
+      "code": "ED",
+      "name": "Engagement Director",
+      "scope": "Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio.",
+      "income": "Objetivos estrategicos del cliente, RFP CREDI10 2.0, restricciones de presupuesto y riesgo.",
+      "outcome": "Vision y mandato del engagement, aprobacion del caso de negocio (Fase 6), decisiones Go/No-Go de alto nivel.",
+      "verifies": [],
+      "cell": "Comite de Gobierno"
+    },
+    {
+      "code": "EM",
+      "name": "Engagement Manager",
+      "scope": "Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases.",
+      "income": "Mandato del ED, backlog de fases, estado de entregables y gates.",
+      "outcome": "Plan de ejecucion, coordinacion RACI-V, roadmap y RAID consolidados (Fase 5).",
+      "verifies": ["0"],
+      "cell": "Comite de Gobierno"
+    },
+    {
+      "code": "AM",
+      "name": "Advisory Manager",
+      "scope": "Guardian de calidad AICV-E (Accuracy, Integrity, Congruence, Viability, Epistemic Certainty) y guardian del Hilo Dorado. Gobierna la trazabilidad y ejerce poder de veto sobre cualquier entregable que rompa la cadena.",
+      "income": "Todos los entregables de las celulas, matriz de trazabilidad, criterios de gate.",
+      "outcome": "Veredictos AICV-E, verificacion de gates QG-1..QG-6, veto de entregables inconsistentes.",
+      "verifies": ["1", "2", "3", "4", "5", "6"],
+      "cell": "Comite de Gobierno"
+    },
+    {
+      "code": "EA",
+      "name": "Lead Enterprise Architect",
+      "scope": "Arquitectura empresarial; mapea capacidades de negocio, dominios y la relacion entre estrategia y tecnologia (TOGAF/C4).",
+      "income": "Drivers de negocio, diagramas de contexto y despliegue, assessment WSO2/Studio F.",
+      "outcome": "Mapa de capacidades, arquitectura AS-IS y TO-BE, ABBs.",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "BA",
+      "name": "Lead Business Architect",
+      "scope": "Arquitectura de negocio; capacidades, cadena de valor y modelo operativo del negocio de credito/originacion.",
+      "income": "RFP, objetivos, indicadores de retorno, procesos de negocio.",
+      "outcome": "Modelo de capacidades de negocio, drivers y value streams.",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "PIA",
+      "name": "Process Intelligence Analyst",
+      "scope": "Inteligencia de procesos; analiza los procesos operativos (originacion, pagos, corte de cartera, cobranza) y detecta ineficiencias.",
+      "income": "Documentos de proceso (Originacion, GenerarPagos, ProcesoCorteCartera, LinkDePagos, B2C, etc.).",
+      "outcome": "Mapas de proceso AS-IS, pains y gaps de proceso, metricas.",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "SME",
+      "name": "Industry & Reference SME",
+      "scope": "Experto de industria y referencia; aporta estado del arte, benchmarks y mejores practicas del sector de credito de consumo y fintech.",
+      "income": "Contexto AS-IS, tendencias de industria, referencias de mercado.",
+      "outcome": "Benchmarks (Fase 2), patrones de referencia, estado del arte.",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "TDA",
+      "name": "Technical Discovery Architect",
+      "scope": "Arquitecto de descubrimiento tecnico; levanta el stack real (.NET, SQL Server, AWS, integraciones) y la deuda tecnica.",
+      "income": "Assessment WSO2/Studio F, diagramas de despliegue e infraestructura AWS, PDFs de integradores.",
+      "outcome": "Inventario tecnico AS-IS, deuda tecnica, higiene epistemica (Fase 0).",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "DRE",
+      "name": "Domain & Requirements Lead",
+      "scope": "Lider de dominio y requisitos; estructura el dominio, define vacios epistemicos y requisitos de descubrimiento.",
+      "income": "Corpus completo, supuestos y conflictos documentales.",
+      "outcome": "Registro de supuestos/conflictos/vacios (Fase 0), requisitos de dominio.",
+      "verifies": [],
+      "cell": "Celula 1 - Discovery"
+    },
+    {
+      "code": "SA",
+      "name": "Lead Solution Architect",
+      "scope": "Arquitecto de solucion; disena la solucion TO-BE, los SBBs y la arquitectura objetivo que resuelve los gaps.",
+      "income": "Gaps y relievers (Fase 3), ABBs/contexto (Fase 3.5).",
+      "outcome": "Arquitectura de solucion TO-BE, SBBs, specs tecnicas (Fase 4).",
+      "verifies": [],
+      "cell": "Celula 2 - Diseno"
+    },
+    {
+      "code": "DA",
+      "name": "Data & Integration Architect",
+      "scope": "Arquitecto de datos e integracion; disena el modelo de datos y la estrategia de integracion (APIs centralizadas, WSO2).",
+      "income": "Inventario de bases de datos SQL Server, integraciones AS-IS, pains de integracion Siesa.",
+      "outcome": "Modelo de datos TO-BE, arquitectura de integracion y APIs.",
+      "verifies": [],
+      "cell": "Celula 2 - Diseno"
+    },
+    {
+      "code": "PM",
+      "name": "Product Manager / Spec BA",
+      "scope": "Product manager y business analyst de especificacion; traduce la solucion en specs, historias y backlog.",
+      "income": "Arquitectura TO-BE, capacidades priorizadas.",
+      "outcome": "Specs funcionales, historias de usuario, backlog (Fase 4).",
+      "verifies": [],
+      "cell": "Celula 2 - Diseno"
+    },
+    {
+      "code": "UX",
+      "name": "Lead Product Designer",
+      "scope": "Diseno de producto y experiencia; define flujos, interaccion y experiencia de los canales (B2C, ecommerce, atencion).",
+      "income": "Procesos de cara al cliente (B2C, BotonEcommerce, Captura Foto, atencion).",
+      "outcome": "Flujos UX, wireframes conceptuales, lineamientos de experiencia.",
+      "verifies": [],
+      "cell": "Celula 2 - Diseno"
+    },
+    {
+      "code": "AIA",
+      "name": "AI Acceleration Architect",
+      "scope": "Arquitecto de aceleracion con IA; identifica oportunidades de automatizacion e IA (riesgo, originacion, cobranza, atencion).",
+      "income": "Capacidades, gaps, procesos candidatos a IA.",
+      "outcome": "Casos de uso de IA, aceleradores y patrones de automatizacion.",
+      "verifies": [],
+      "cell": "Celula 2 - Diseno"
+    },
+    {
+      "code": "FIN",
+      "name": "Financial & Value Analyst",
+      "scope": "Analista financiero y de valor; cuantifica ROI, costos, beneficios e indicadores de retorno del RFP.",
+      "income": "Indicadores de retorno del RFP, estimaciones de esfuerzo (Fase 5).",
+      "outcome": "Modelo de ROI, caso de negocio cuantificado (Fase 6).",
+      "verifies": [],
+      "cell": "Celula 3 - Valor y Habilitacion"
+    },
+    {
+      "code": "SEC",
+      "name": "Cybersecurity Architect",
+      "scope": "Arquitecto de ciberseguridad; evalua postura de seguridad (WAF, VPN IPSec, segmentacion VPC) y requisitos de cumplimiento.",
+      "income": "Arquitectura AWS, controles existentes, requisitos regulatorios.",
+      "outcome": "Requisitos y controles de seguridad, riesgos de ciberseguridad.",
+      "verifies": [],
+      "cell": "Celula 3 - Valor y Habilitacion"
+    },
+    {
+      "code": "ORG",
+      "name": "Operating Model Specialist",
+      "scope": "Especialista en modelo operativo; disena el modelo operativo objetivo, capacidades organizacionales y gestion del cambio.",
+      "income": "Modelo operativo AS-IS, roadmap, olas de entrega.",
+      "outcome": "Modelo operativo TO-BE, plan de habilitacion y cambio (Fase 5).",
+      "verifies": [],
+      "cell": "Celula 3 - Valor y Habilitacion"
+    }
+  ]
+}
