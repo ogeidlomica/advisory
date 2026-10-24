@@ -166,5 +166,99 @@ class TestPhases(unittest.TestCase):
             self.assertIn("Veredicto", body, f"fase {pid} debe incluir veredicto de gate")
 
 
+class TestPhaseReportsContent(unittest.TestCase):
+    """FEAT-002: corpus-grounded content for phases 0, 1 and 2."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+
+        cls.phases = load_phases()
+        roles = roles_pkg.load_roles()
+        loader = CorpusLoader(_REPO_ROOT)
+        docs = loader.load()
+        cls.bodies = {}
+        for pid in ("0", "1", "2"):
+            ph = cls.phases[pid]
+            ctx = BuildContext(ph, roles, docs, GoldenThread())
+            cls.bodies[pid] = ph.builder(ctx)
+
+    def _assert_structural_contract(self, pid, verdict_id):
+        body = self.bodies[pid]
+        self.assertIn("```mermaid", body, f"fase {pid} debe incluir mermaid")
+        self.assertTrue(
+            any(line.startswith("|") for line in body.splitlines()),
+            f"fase {pid} debe incluir una tabla markdown (linea con '|')",
+        )
+        self.assertTrue(
+            any(tag in body for tag in (
+                "[VERIFIED-FACT]", "[DOC-ASSUMPTION]",
+                "[DOC-CONFLICT]", "[EPISTEMIC-VOID]")),
+            f"fase {pid} debe incluir al menos una etiqueta epistemica",
+        )
+        self.assertIn(f"Veredicto {verdict_id}", body,
+                      f"fase {pid} debe incluir veredicto {verdict_id}")
+
+    def test_phase0_contract_and_tokens(self):
+        self._assert_structural_contract("0", "QG-0")
+        body = self.bodies["0"]
+        # El conflicto real de alcance (+150 apps / +200 BDs vs ~20 componentes).
+        self.assertIn("[DOC-CONFLICT]", body)
+        self.assertIn("+150", body)
+        self.assertIn("+200", body)
+        self.assertIn("Studio F", body)
+        self.assertIn("[EPISTEMIC-VOID]", body)
+        for token in ("CrossCore", "Inspektor", "C10_Credi10NET", "WOLKVOX"):
+            self.assertIn(token, body, f"fase 0 debe mencionar {token}")
+
+    def test_phase1_contract_and_tokens(self):
+        self._assert_structural_contract("1", "QG-1")
+        body = self.bodies["1"]
+        for token in ("CrossCore", "Inspektor", "Datacredito",
+                      "C10_Credi10NET", ".NET Framework 4.8",
+                      ".NET Core 3.1", "WOLKVOX"):
+            self.assertIn(token, body, f"fase 1 debe mencionar {token}")
+        # Indicador de disponibilidad 90 -> 99 del RFP.
+        self.assertIn("90%", body)
+        self.assertIn("99%", body)
+        # Hilo Dorado DRV/CAP.
+        self.assertIn("DRV-001", body)
+        self.assertIn("CAP-001", body)
+
+    def test_phase2_contract_and_tokens(self):
+        self._assert_structural_contract("2", "QG-2")
+        body = self.bodies["2"]
+        for token in ("WSO2", "API", "BIAN", "BMK-001"):
+            self.assertIn(token, body, f"fase 2 debe mencionar {token}")
+        # Los benchmarks enlazan al Hilo Dorado de la Fase 1.
+        self.assertIn("CAP-", body)
+        self.assertIn("DRV-", body)
+        self.assertIn("[DOC-ASSUMPTION]", body)
+
+    def test_generated_files_on_disk(self):
+        """Tras regenerar, los 3 .md existen y cumplen el contrato."""
+        import subprocess
+
+        out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        for pid in ("0", "1", "2"):
+            subprocess.run(
+                [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+                 "--phase", pid],
+                cwd=_REPO_ROOT, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+        for pid, fname in (("0", "00-higiene-epistemica.md"),
+                           ("1", "01-contexto-as-is.md"),
+                           ("2", "02-estado-del-arte.md")):
+            path = os.path.join(out_dir, fname)
+            self.assertTrue(os.path.isfile(path), f"{fname} debe existir")
+            with open(path, encoding="utf-8") as fh:
+                content = fh.read()
+            self.assertIn("```mermaid", content)
+            self.assertIn("Veredicto QG-", content)
+
+
 if __name__ == "__main__":
     unittest.main()

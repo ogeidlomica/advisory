@@ -120,28 +120,21 @@ def _base_report(ctx: BuildContext, intro: str) -> str:
 # --------------------------------------------------------------------------- #
 
 def build_phase0(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase establece la higiene epistemica: inventario del corpus, "
-        "trazabilidad de fuentes y registro de supuestos, conflictos y vacios "
-        "([VERIFIED-FACT] / [DOC-ASSUMPTION] / [DOC-CONFLICT] / [EPISTEMIC-VOID]).",
-    )
+    # FEAT-002: corpus-grounded content lives in phases/phase0.py.
+    from phases import phase0
+    return phase0.build(ctx)
 
 
 def build_phase1(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase consolida el contexto AS-IS: capacidades de negocio, "
-        "arquitectura de contexto/despliegue/AWS y procesos operativos.",
-    )
+    # FEAT-002: corpus-grounded content lives in phases/phase1.py.
+    from phases import phase1
+    return phase1.build(ctx)
 
 
 def build_phase2(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase documenta el estado del arte y benchmarks de industria "
-        "vinculados a las capacidades del AS-IS.",
-    )
+    # FEAT-002: corpus-grounded content lives in phases/phase2.py.
+    from phases import phase2
+    return phase2.build(ctx)
 
 
 def build_phase3(ctx: BuildContext) -> str:
