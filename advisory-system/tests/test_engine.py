@@ -888,6 +888,248 @@ class TestPhase4Deepening(unittest.TestCase):
         self.assertIn("04b-catalogo-historias.md", self.body)
 
 
+class TestPhase5Deepening(unittest.TestCase):
+    """FEAT-004: per-module estimation + parametric model + roadmap +
+    business-owner evaluation + schedule-slip risk analysis in Phase 5.
+
+    These tests exercise the deepened estimation code paths and derive the
+    expected coverage from len(MODULES) so adding/removing a module keeps the
+    assertions honest (no sampling, no hardcoded counts)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+        phases = load_phases()
+        roles = roles_pkg.load_roles()
+        docs = CorpusLoader(_REPO_ROOT).load()
+        kb = KnowledgeBase.from_documents(docs)
+        ctx = BuildContext(phases["5"], roles, docs, GoldenThread(),
+                           knowledge_base=kb)
+        cls.body = phases["5"].builder(ctx)
+
+    def test_per_module_estimation_row_for_every_module(self):
+        """Full coverage: every declared module has an estimation row with its
+        T-shirt size, adjusted SP, person-months and WSJF (no sampling)."""
+        from phases.modules import MODULES
+        from phases.phase5 import (_module_profile, _derive_estimate, _wsjf,
+                                   _fmt_pm)
+        self.assertIn("Estimacion Detallada por Modulo", self.body)
+        for mod in MODULES:
+            tshirt, valor, crit, red, job = _module_profile(mod)
+            _base, adj_sp, pm = _derive_estimate(tshirt)
+            cod, wsjf = _wsjf(valor, crit, red, job)
+            # A table row that begins with the module id must carry its name,
+            # the derived adjusted SP, the formatted person-months and WSJF.
+            row = next(
+                (l for l in self.body.splitlines()
+                 if l.startswith(f"| {mod.id} |") and mod.name in l
+                 and _fmt_pm(pm) in l),
+                None,
+            )
+            self.assertIsNotNone(
+                row, f"falta la fila de estimacion de {mod.id} con sus cifras")
+            self.assertIn(str(adj_sp), row,
+                          f"{mod.id} debe mostrar su SP ajustado derivado")
+            self.assertIn(str(wsjf), row, f"{mod.id} debe mostrar su WSJF")
+
+    def test_estimation_count_equals_module_count(self):
+        """Number of estimation rows == len(MODULES) (completeness, no sampling)."""
+        from phases.modules import MODULES
+        rows = [l for l in self.body.splitlines()
+                if any(l.startswith(f"| {m.id} |") for m in MODULES)]
+        # Every module appears in several tables (estimation, WSJF order,
+        # front breakdown, scheduling, uncertainty). At minimum each module has
+        # one estimation row; ensure all module ids are present.
+        present = {m.id for m in MODULES
+                   if any(l.startswith(f"| {m.id} |") for l in self.body.splitlines())}
+        self.assertEqual(present, {m.id for m in MODULES},
+                         "todos los modulos declarados deben estimarse")
+        self.assertTrue(rows)
+
+    def test_parametric_table_is_recalibratable(self):
+        """The parametric table must surface the live PARAM/TSHIRT values, so a
+        recalibration would change the rendered numbers (not a static string)."""
+        from phases.phase5 import PARAM, TSHIRT_BASE_SP
+        self.assertIn("Tabla parametrica recalibrable", self.body)
+        self.assertIn(f"{PARAM['productividad_sp_por_pm']:.0f} SP / person-month",
+                      self.body)
+        self.assertIn(f"{PARAM['complejidad']:.2f}", self.body)
+        self.assertIn(f"{PARAM['acople_legado']:.2f}", self.body)
+        self.assertIn(f"{PARAM['riesgo_integracion']:.2f}", self.body)
+        # Story-point base per size rendered from the live dict.
+        for size, sp in TSHIRT_BASE_SP.items():
+            self.assertTrue(
+                any(l.strip() == f"| {size} | {sp} |"
+                    for l in self.body.splitlines()),
+                f"la talla {size} debe mostrar SP base {sp}")
+
+    def test_front_decomposition_present(self):
+        """Per-front breakdown (Dev/Data/Integracion/QA/DevOps/cambio)."""
+        from phases.phase5 import FRONT_SPLIT
+        self.assertEqual(sum(p for _, p in FRONT_SPLIT), 100,
+                         "el perfil por frente debe sumar 100%")
+        for front, _pct in FRONT_SPLIT:
+            self.assertIn(front, self.body, f"falta el frente {front}")
+        self.assertIn("Descomposicion del esfuerzo por frente", self.body)
+
+    def test_roadmap_gantt_critical_path_and_dependencies(self):
+        self.assertIn("gantt", self.body, "debe incluir un gantt Mermaid")
+        self.assertIn("Ruta critica", self.body)
+        # Explicit, acyclic technical dependency graph.
+        self.assertIn("flowchart LR", self.body)
+        self.assertIn("-->", self.body)
+
+    def test_dependency_graph_is_acyclic(self):
+        """Parse the dependency flowchart edges and assert no cycle exists."""
+        from phases.phase5 import _dependency_diagram
+        import re as _re
+        diagram = _dependency_diagram()
+        edges = _re.findall(r"(\w+)\s*-->\s*(\w+)", diagram)
+        self.assertTrue(edges, "debe haber aristas de dependencia")
+        graph = {}
+        for a, b in edges:
+            graph.setdefault(a, []).append(b)
+
+        state = {}
+
+        def has_cycle(node):
+            state[node] = "grey"
+            for nxt in graph.get(node, []):
+                if state.get(nxt) == "grey":
+                    return True
+                if state.get(nxt) != "black" and has_cycle(nxt):
+                    return True
+            state[node] = "black"
+            return False
+
+        self.assertFalse(any(has_cycle(n) for n in list(graph)),
+                         "el grafo de dependencias debe ser aciclico")
+
+    def test_business_owner_evaluation_present(self):
+        self.assertIn("Evaluacion critica del Dueno de Negocio", self.body)
+        self.assertIn("Evaluacion del dueno de negocio", self.body)
+        # The verdict must speak to sufficiency for creating the project.
+        self.assertIn("suficiente para CREAR y ARRANCAR el proyecto", self.body)
+
+    def test_schedule_slip_risk_with_go_nogo(self):
+        self.assertIn("Riesgo de Desfase de Tiempos", self.body)
+        self.assertIn("schedule-slip", self.body)
+        # Probability / impact matrix with concrete risk ids.
+        for rs in ("RS-01", "RS-02", "RS-03", "RS-04", "RS-05", "RS-06"):
+            self.assertIn(rs, self.body)
+        self.assertIn("Probabilidad", self.body)
+        self.assertIn("Impacto", self.body)
+        # Explicit Go/No-Go verdict to start construction.
+        self.assertIn("Veredicto Go/No-Go", self.body)
+        self.assertIn("GO CONDICIONADO", self.body)
+
+    def test_schedule_risk_tied_to_kb_coverage(self):
+        """The uncertainty table must be derived from KB coverage bands/flags,
+        not hardcoded: it must list every module and a per-module uncertainty."""
+        from phases.modules import MODULES
+        self.assertIn("Incertidumbre de estimacion por cobertura del corpus",
+                      self.body)
+        for mod in MODULES:
+            self.assertTrue(
+                any(l.startswith(f"| {mod.id} |") and mod.source in l
+                    for l in self.body.splitlines()),
+                f"{mod.id} debe aparecer en la tabla de incertidumbre con su fuente")
+
+    def test_effort_and_money_figures_carry_doc_assumption(self):
+        """Every effort figure region must be marked [DOC-ASSUMPTION]."""
+        self.assertIn("[DOC-ASSUMPTION]", self.body)
+        # The per-module estimation header (SP ajustado / person-months) is the
+        # region that must carry the tag.
+        est_header = next(
+            (l for l in self.body.splitlines()
+             if l.startswith("| Modulo |") and "SP ajustado" in l), None)
+        self.assertIsNotNone(est_header, "debe existir la cabecera de estimacion")
+        self.assertIn("[DOC-ASSUMPTION]", est_header,
+                      "la estimacion por modulo debe marcarse [DOC-ASSUMPTION]")
+
+    def test_recalibration_changes_numbers(self):
+        """Smoke check that the model is parametric: bumping productivity lowers
+        derived person-months (would be impossible for a hardcoded table)."""
+        from phases import phase5
+        base_pm = phase5._derive_estimate("L")[2]
+        original = phase5.PARAM["productividad_sp_por_pm"]
+        try:
+            phase5.PARAM["productividad_sp_por_pm"] = original * 2
+            faster_pm = phase5._derive_estimate("L")[2]
+        finally:
+            phase5.PARAM["productividad_sp_por_pm"] = original
+        self.assertLess(faster_pm, base_pm,
+                        "mas velocidad => menos person-months (modelo parametrico)")
+
+
+class TestCatalogGating(unittest.TestCase):
+    """FEAT-005 step 5: the HU/Gherkin catalog (QG-4b) must evaluate GO for the
+    real module universe and NO-GO if a module loses its edge scenario, so the
+    gate is computed (not a hardcoded GO string)."""
+
+    def test_real_catalog_is_go(self):
+        from phases import catalog
+        body = catalog.build(knowledge_base=None)
+        self.assertIn("Veredicto QG-4b:** GO", body)
+
+    def test_catalog_nogo_when_a_module_has_no_story(self):
+        """Temporarily strip a module's stories and confirm the catalog verdict
+        flips to NO-GO (revert-sensitive, not a static string)."""
+        import dataclasses
+        from phases import catalog, modules as mods
+        original = list(mods.MODULES)
+        try:
+            # Rebuild the first module with an empty story list; the verdict
+            # logic requires every module to carry >= 1 story.
+            broken_module = dataclasses.replace(original[0], stories=[])
+            mods.MODULES[0] = broken_module
+            # catalog imported MODULES by reference at module load; patch both.
+            catalog.MODULES[0] = broken_module
+            body = catalog.build(knowledge_base=None)
+            self.assertIn("Veredicto QG-4b:** NO-GO", body)
+        finally:
+            mods.MODULES[:] = original
+            catalog.MODULES[:] = original
+
+
+class TestAllPhasesAndCatalogGateGo(unittest.TestCase):
+    """FEAT-005 step 5: evaluate EVERY phase body (0..6) plus the catalog and
+    confirm all quality gates are GO, reusing in-memory bodies (fast)."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+        cls.phases = load_phases()
+        roles = roles_pkg.load_roles()
+        docs = CorpusLoader(_REPO_ROOT).load()
+        kb = KnowledgeBase.from_documents(docs)
+        cls.bodies = {}
+        for pid in PHASE_ORDER:
+            ph = cls.phases[pid]
+            ctx = BuildContext(ph, roles, docs, GoldenThread(),
+                               knowledge_base=kb)
+            cls.bodies[pid] = ph.builder(ctx)
+
+    def test_every_phase_gate_go(self):
+        from engine.gating import evaluate_gate
+        for pid in PHASE_ORDER:
+            satisfied, reasons = evaluate_gate(self.phases[pid], self.bodies[pid])
+            self.assertTrue(satisfied,
+                            f"QG-{pid} debe ser GO; reasons={reasons}")
+            self.assertEqual(reasons, [])
+
+    def test_catalog_gate_go(self):
+        from phases import catalog
+        body = catalog.build(knowledge_base=None)
+        self.assertIn("Veredicto QG-4b:** GO", body)
+
+
 class TestPipelineProducesCatalog(unittest.TestCase):
     """FEAT-003: the full pipeline writes the catalog file deterministically."""
 

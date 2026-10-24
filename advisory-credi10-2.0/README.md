@@ -22,6 +22,14 @@ Zero-Drift organiza el advisory como un **Comite de Gobierno** mas **3 Celulas**
 
 - Documentos PDF analizados: **15**
 - Diagramas PNG (evidencia binaria transcrita): **3**
+- Total ingerido (cobertura COMPLETA, sin muestreo): **18** documentos.
+
+## Base de Conocimiento y capa de politicas (skills)
+
+La ingesta del corpus es **completa y verificable** (nada de muestreo parcial) y esta gobernada por una **capa declarativa de politicas reutilizables** (skills), pensada como politica de la organizacion y aplicable a otros corpus/clientes:
+
+- **Base de Conocimiento generada** en [`../knowledge-base/`](../knowledge-base/): indice por documento (sha256, tipo, rol primario/secundario, tamanio), resumenes jerarquicos, extraccion de hechos clave con trazabilidad a su documento fuente y una [`coverage-checklist.md`](../knowledge-base/coverage-checklist.md) que marca honestamente los documentos de baja cobertura / [EPISTEMIC-VOID] (sin fabricar evidencia). La consume el advisory para trazar cada decision a su fuente.
+- **Capa de skills declarativos** en `.kiro/skills/` (politicas versionadas, agnosticas del cliente): `complete-corpus-ingestion` (ingesta y validacion COMPLETA del corpus), `token-budget-optimization` (optimizar tokens GARANTIZANDO procesamiento y entendimiento completos), `zero-drift-roles-policy` (politica permanente de tomar y validar TODO el contexto documental) y `ai-opportunities-catalog` (oportunidades de IA modeladas como skills, no hardcodeadas). El motor las carga via `advisory-system/engine/skills.py`.
 
 ## Informes por fase
 
@@ -40,6 +48,17 @@ Zero-Drift organiza el advisory como un **Comite de Gobierno** mas **3 Celulas**
 Ademas de los 7 informes por fase, el motor genera un catalogo **exhaustivo de Historias de Usuario + BDD/Gherkin** que cubre TODO el universo de modulos de Credi10 (sin muestreo), complemento de la Fase 4:
 
 - [`04b-catalogo-historias.md`](04b-catalogo-historias.md): HU + criterios Gherkin (happy path + casos borde) por modulo, desde la fuente unica de verdad `advisory-system/phases/modules.py` (reutilizada por la estimacion por modulo de la Fase 5).
+
+## Secciones profundizadas (iteracion de detalle)
+
+Esta iteracion lleva el advisory al nivel de detalle necesario para **definir el alcance y estimar**:
+
+- **Arquitectura de solucion (Fase 4):** vistas C4 N1-3 TO-BE, ADR-001..006, ERD por bounded context, contratos OpenAPI/AsyncAPI y BPMN.
+- **Catalogo de HU/Gherkin exhaustivo (04b):** cobertura COMPLETA de todos los modulos declarados (sin muestreo).
+- **Catalogo de oportunidades de IA (Fase 4):** IA-como-producto e IA-como-acelerador-de-construccion, renderizado desde el skill declarativo `ai-opportunities-catalog`.
+- **Estimacion detallada por modulo (Fase 5):** T-Shirt + WSJF + story points / person-months con una **tabla parametrica recalibrable** y descomposicion por frente (Dev/Data/Integracion/QA/DevOps/gestion del cambio). Todas las cifras de esfuerzo son [DOC-ASSUMPTION].
+- **Roadmap por olas (Fase 5):** gantt Mermaid con dependencias tecnicas explicitas (aciclicas) y ruta critica.
+- **Evaluacion del dueno de negocio + riesgo de desfase (Fase 5):** scorecard de suficiencia para crear el proyecto y analisis de **schedule-slip** atado a la cobertura de la Base de Conocimiento, con veredicto Go/No-Go.
 
 ## Hilo Dorado (F1 -> F6)
 
