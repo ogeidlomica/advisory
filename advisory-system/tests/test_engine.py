@@ -242,7 +242,7 @@ class TestPhaseReportsContent(unittest.TestCase):
         import subprocess
 
         out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
-        for pid in ("0", "1", "2"):
+        for pid in ("0", "1", "2", "3", "4"):
             subprocess.run(
                 [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
                  "--phase", pid],
@@ -251,13 +251,90 @@ class TestPhaseReportsContent(unittest.TestCase):
             )
         for pid, fname in (("0", "00-higiene-epistemica.md"),
                            ("1", "01-contexto-as-is.md"),
-                           ("2", "02-estado-del-arte.md")):
+                           ("2", "02-estado-del-arte.md"),
+                           ("3", "03-gaps-y-viabilizacion.md"),
+                           ("4", "04-diseno-to-be.md")):
             path = os.path.join(out_dir, fname)
             self.assertTrue(os.path.isfile(path), f"{fname} debe existir")
             with open(path, encoding="utf-8") as fh:
                 content = fh.read()
             self.assertIn("```mermaid", content)
             self.assertIn("Veredicto QG-", content)
+
+
+class TestPhase34ReportsContent(unittest.TestCase):
+    """FEAT-003: corpus-grounded content for phases 3 and 4."""
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+
+        cls.phases = load_phases()
+        roles = roles_pkg.load_roles()
+        loader = CorpusLoader(_REPO_ROOT)
+        docs = loader.load()
+        cls.bodies = {}
+        for pid in ("3", "4"):
+            ph = cls.phases[pid]
+            ctx = BuildContext(ph, roles, docs, GoldenThread())
+            cls.bodies[pid] = ph.builder(ctx)
+
+    def _assert_structural_contract(self, pid, verdict_id):
+        body = self.bodies[pid]
+        self.assertIn("```mermaid", body, f"fase {pid} debe incluir mermaid")
+        self.assertTrue(
+            any(line.startswith("|") for line in body.splitlines()),
+            f"fase {pid} debe incluir una tabla markdown",
+        )
+        self.assertTrue(
+            any(tag in body for tag in (
+                "[VERIFIED-FACT]", "[DOC-ASSUMPTION]",
+                "[DOC-CONFLICT]", "[EPISTEMIC-VOID]")),
+            f"fase {pid} debe incluir al menos una etiqueta epistemica",
+        )
+        self.assertIn(f"Veredicto {verdict_id}", body,
+                      f"fase {pid} debe incluir veredicto {verdict_id}")
+
+    def test_phase3_contract_and_tokens(self):
+        self._assert_structural_contract("3", "QG-3")
+        body = self.bodies["3"]
+        # Dolor real de integracion con Siesa + gobernanza + obsolescencia.
+        for token in ("Siesa", "archivos planos", "Data Services",
+                      "CrossCore", "Inspektor", "Datacredito",
+                      ".NET Framework 4.8", ".NET Core 3.1"):
+            self.assertIn(token, body, f"fase 3 debe mencionar {token}")
+        # Gap Analysis TOGAF B/C/D ligado a indicadores RFP.
+        self.assertIn("TOGAF", body)
+        self.assertIn("90% -> 99%", body)
+        # Hilo Dorado GAP/REL/ABB referenciando DRV/BMK.
+        for prefix in ("GAP-001", "REL-001", "ABB-001", "DRV-", "BMK-"):
+            self.assertIn(prefix, body, f"fase 3 debe incluir {prefix}")
+        # Reverse Briefing (handoff Celula 1 -> Celula 2).
+        self.assertIn("Reverse Briefing", body)
+
+    def test_phase4_contract_and_tokens(self):
+        self._assert_structural_contract("4", "QG-4")
+        body = self.bodies["4"]
+        for token in ("Siesa", "Data Services", ".NET 8", "PayU",
+                      "API Gateway", "CrossCore"):
+            self.assertIn(token, body, f"fase 4 debe mencionar {token}")
+        # Mermaid ER/C4/flowchart.
+        self.assertIn("erDiagram", body, "fase 4 debe incluir un erDiagram")
+        self.assertIn("flowchart", body, "fase 4 debe incluir un flowchart (C4)")
+        # Al menos 3 ADRs.
+        for adr in ("ADR-001", "ADR-002", "ADR-003"):
+            self.assertIn(adr, body, f"fase 4 debe incluir {adr}")
+        # Gherkin BDD en espanol.
+        for kw in ("Dado", "Cuando", "Entonces"):
+            self.assertIn(kw, body, f"fase 4 debe incluir Gherkin '{kw}'")
+        # Hilo Dorado SBB referenciando ABB.
+        self.assertIn("SBB-001", body)
+        self.assertIn("ABB-001", body)
+        # Dry-Run y cadena de validacion.
+        self.assertIn("Dry-Run", body)
+        self.assertIn("STRIDE", body)
 
 
 if __name__ == "__main__":

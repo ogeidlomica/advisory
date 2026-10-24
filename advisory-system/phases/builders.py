@@ -138,19 +138,15 @@ def build_phase2(ctx: BuildContext) -> str:
 
 
 def build_phase3(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase identifica gaps/pains, define relievers y los ABBs/contexto "
-        "de arquitectura (Fase 3.5), manteniendo el Hilo Dorado.",
-    )
+    # FEAT-003: corpus-grounded content lives in phases/phase3.py.
+    from phases import phase3
+    return phase3.build(ctx)
 
 
 def build_phase4(ctx: BuildContext) -> str:
-    return _base_report(
-        ctx,
-        "Esta fase disena el TO-BE: arquitectura objetivo, SBBs, specs e "
-        "historias, validadas por el Dry-Run/Tabletop del AM.",
-    )
+    # FEAT-003: corpus-grounded content lives in phases/phase4.py.
+    from phases import phase4
+    return phase4.build(ctx)
 
 
 def build_phase5(ctx: BuildContext) -> str:
