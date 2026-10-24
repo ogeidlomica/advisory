@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from engine.corpus import CorpusLoader
+from engine.gating import evaluate_gate
 from engine.model import GoldenThread, Phase, raci_v_for
 from engine.phases import PHASE_ORDER, load_phases
 from phases import build_readme
@@ -81,24 +82,33 @@ class AdvisoryOrchestrator:
         # 1) Producers engage (Responsible).
         roles_engaged = list(raci.responsible)
 
-        # 2) Verifier gate check (AICV-E). Placeholder gate is satisfied so the
-        #    pipeline runs green; real gate logic arrives with report content.
-        gate_satisfied = True
-        gate_verdict = phase.gate.verdict(gate_satisfied)
-
-        # 3) Build the report via the phase builder.
+        # 2) Build the report via the phase builder. The builder renders its
+        #    verdict line from ctx.gate_satisfied, which does not exist until
+        #    the body does, so we build optimistically (assumed GO) and then
+        #    evaluate the real gate from the produced body in step 3.
         ctx = BuildContext(
             phase=phase,
             roles=self.roles,
             documents=self.corpus.documents,
             thread=self.thread,
-            gate_satisfied=gate_satisfied,
+            gate_satisfied=True,
         )
         builder = phase.builder
         if builder is None:
             body = f"# {phase.name}\n\n(Sin builder asignado.)\n"
         else:
             body = builder(ctx)
+
+        # 3) Verifier gate check (AICV-E). The gate is COMPUTED from the body:
+        #    structural contract (mermaid, table, epistemic tag, verdict
+        #    scaffold) plus phase-specific Hilo Dorado traceability. If the
+        #    computed verdict differs from the optimistic one the builder
+        #    printed, patch the body so the printed 'Veredicto QG-x' tells the
+        #    truth.
+        gate_satisfied, gate_reasons = evaluate_gate(phase, body)
+        gate_verdict = phase.gate.verdict(gate_satisfied, gate_reasons)
+        if not gate_satisfied:
+            body = self._patch_verdict(body, phase, gate_verdict)
 
         # 4) Write the report.
         output_path = os.path.join(self.out_dir, phase.filename)
@@ -113,6 +123,30 @@ class AdvisoryOrchestrator:
             gate_verdict=gate_verdict,
             output_path=output_path,
         )
+
+    @staticmethod
+    def _patch_verdict(body: str, phase: Phase, gate_verdict: str) -> str:
+        """Rewrite the printed 'Veredicto QG-x' line to the computed verdict.
+
+        Builders render the verdict optimistically (GO) because they run before
+        the gate is evaluated. When the gate computes NO-GO we rewrite that one
+        line so the on-disk report matches the real result, without disturbing
+        the rest of the structural contract.
+        """
+        marker = f"**Veredicto {phase.gate.id}:**"
+        out_lines = []
+        patched = False
+        for line in body.splitlines():
+            if not patched and marker in line:
+                prefix = line[: line.index(marker) + len(marker)]
+                out_lines.append(f"{prefix} {gate_verdict}")
+                patched = True
+            else:
+                out_lines.append(line)
+        patched_body = "\n".join(out_lines)
+        if body.endswith("\n") and not patched_body.endswith("\n"):
+            patched_body += "\n"
+        return patched_body
 
     def _write_readme(self) -> str:
         body = build_readme(self.phases, self.roles, self.corpus.documents)

@@ -481,5 +481,106 @@ class TestReadmeIndexAndPipeline(unittest.TestCase):
         self.assertIn("[EPISTEMIC-VOID]", p6)
 
 
+class TestGateEvaluation(unittest.TestCase):
+    """Review follow-up: the stage-gate verdict must be COMPUTED, not hardcoded.
+
+    Exercises both paths: the real report bodies evaluate to GO, and a
+    deliberately-incomplete body / a broken Hilo Dorado evaluate to NO-GO with
+    concrete reasons (so the No-Go branch is no longer dead/untested).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.model import GoldenThread
+        from phases.builders import BuildContext
+
+        cls.phases = load_phases()
+        roles = roles_pkg.load_roles()
+        loader = CorpusLoader(_REPO_ROOT)
+        docs = loader.load()
+        cls.bodies = {}
+        for pid in PHASE_ORDER:
+            ph = cls.phases[pid]
+            ctx = BuildContext(ph, roles, docs, GoldenThread())
+            cls.bodies[pid] = ph.builder(ctx)
+
+    def test_all_real_reports_evaluate_go(self):
+        from engine.gating import evaluate_gate
+        for pid in PHASE_ORDER:
+            ph = self.phases[pid]
+            satisfied, reasons = evaluate_gate(ph, self.bodies[pid])
+            self.assertTrue(
+                satisfied,
+                f"fase {pid} debe evaluar GO con el corpus real; reasons={reasons}",
+            )
+            self.assertEqual(reasons, [], f"fase {pid} no debe tener reasons en GO")
+
+    def test_empty_body_is_nogo_with_reasons(self):
+        from engine.gating import evaluate_gate
+        ph = self.phases["0"]
+        satisfied, reasons = evaluate_gate(ph, "# Fase vacia\n\n(sin contenido)\n")
+        self.assertFalse(satisfied, "un cuerpo vacio debe evaluar NO-GO")
+        self.assertTrue(reasons, "NO-GO debe enumerar motivos")
+        joined = " ".join(reasons)
+        self.assertIn("mermaid", joined)
+        self.assertIn("tabla", joined)
+        self.assertIn("epistemica", joined)
+        self.assertIn("Veredicto QG-0", joined)
+
+    def test_missing_mermaid_is_nogo(self):
+        from engine.gating import evaluate_gate
+        ph = self.phases["1"]
+        body = self.bodies["1"].replace("```mermaid", "```text")
+        satisfied, reasons = evaluate_gate(ph, body)
+        self.assertFalse(satisfied)
+        self.assertTrue(any("mermaid" in r for r in reasons))
+
+    def test_qg6_broken_golden_thread_is_nogo(self):
+        """QG-6 fails if an ROI link lacks a DRV ancestor on its line."""
+        from engine.gating import evaluate_gate
+        ph = self.phases["6"]
+        # Strip every DRV id so no ROI can trace to a driver.
+        import re as _re
+        broken = _re.sub(r"DRV-\d+", "XXX-000", self.bodies["6"])
+        satisfied, reasons = evaluate_gate(ph, broken)
+        self.assertFalse(satisfied, "QG-6 debe ser NO-GO si el Hilo Dorado se rompe")
+        self.assertTrue(
+            any("ROI" in r and "driver" in r.lower() for r in reasons),
+            f"la razon debe citar ROI sin ancestro driver; reasons={reasons}",
+        )
+
+    def test_qg3_gap_without_reliever_is_nogo(self):
+        """QG-3 fails if a gap/reliever lacks traceability."""
+        from engine.gating import evaluate_gate
+        ph = self.phases["3"]
+        # Remove every REL id so gaps become orphaned and relievers vanish.
+        import re as _re
+        broken = _re.sub(r"REL-\d+", "", self.bodies["3"])
+        satisfied, reasons = evaluate_gate(ph, broken)
+        self.assertFalse(satisfied, "QG-3 debe ser NO-GO si hay gaps sin reliever")
+        self.assertTrue(
+            any("reliever" in r.lower() for r in reasons),
+            f"la razon debe citar gaps sin reliever; reasons={reasons}",
+        )
+
+    def test_nogo_verdict_line_is_patched_on_disk(self):
+        """A computed NO-GO rewrites the printed 'Veredicto QG-x' line."""
+        from engine.gating import evaluate_gate
+        from engine.orchestrator import AdvisoryOrchestrator
+        ph = self.phases["6"]
+        import re as _re
+        broken = _re.sub(r"DRV-\d+", "XXX-000", self.bodies["6"])
+        satisfied, reasons = evaluate_gate(ph, broken)
+        verdict = ph.gate.verdict(satisfied, reasons)
+        patched = AdvisoryOrchestrator._patch_verdict(broken, ph, verdict)
+        self.assertIn("NO-GO", patched)
+        self.assertIn(f"> **Veredicto {ph.gate.id}:** {ph.gate.id} :: NO-GO", patched)
+        # The GO line must be gone.
+        self.assertNotIn(
+            f"**Veredicto {ph.gate.id}:** {ph.gate.id} :: GO", patched
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

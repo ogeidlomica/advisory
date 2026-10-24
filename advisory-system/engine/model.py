@@ -51,11 +51,19 @@ class Gate:
     criteria: List[str] = field(default_factory=list)
     nogo_condition: str = ""
 
-    def verdict(self, satisfied: bool) -> str:
-        """Return a human Go / No-Go verdict line for the report footer."""
+    def verdict(self, satisfied: bool, reasons: Optional[List[str]] = None) -> str:
+        """Return a human Go / No-Go verdict line for the report footer.
+
+        When ``satisfied`` is ``False`` the verdict names the declared No-Go
+        condition and, if ``reasons`` are supplied, the concrete checks that
+        failed (as computed by ``engine.gating.evaluate_gate``).
+        """
         if satisfied:
             return f"{self.id} :: GO - Criterios de salida satisfechos."
-        return f"{self.id} :: NO-GO - {self.nogo_condition}"
+        detail = self.nogo_condition
+        if reasons:
+            detail = f"{detail} [{'; '.join(reasons)}]"
+        return f"{self.id} :: NO-GO - {detail}"
 
 
 # --------------------------------------------------------------------------- #
