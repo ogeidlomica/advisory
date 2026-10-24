@@ -43,6 +43,20 @@ La ingesta del corpus es **completa y verificable** (nada de muestreo parcial) y
 | Fase 5 - Roadmap, Estimacion y RAID | [05-roadmap-estimacion-raid.md](05-roadmap-estimacion-raid.md) | E5.1, E5.2, E5.3 | EM, SA, PM, ORG | AM | QG-5 |
 | Fase 6 - Caso de Negocio | [06-caso-de-negocio.md](06-caso-de-negocio.md) | E6.1, E6.2, E6.3 | ED, FIN, EA | AM | QG-6 |
 
+## Dossier de proyecto TO-BE (por etapa del SDLC)
+
+Ademas de los informes por fase, el motor genera de forma **determinista** un **dossier de proyecto TO-BE** en [`to-be/`](to-be/README.md), organizado con **una subcarpeta por etapa/practica del SDLC** mas **registros transversales** del proyecto en todos los niveles arquitectonicos (negocio, aplicacion, datos, integracion, infraestructura, seguridad):
+
+- [`to-be/01-requisitos/`](to-be/01-requisitos/requisitos.md): requisitos funcionales por modulo + NFR ISO 25010 + reglas de negocio.
+- [`to-be/02-arquitectura/`](to-be/02-arquitectura/arquitectura.md): vistas TO-BE por nivel arquitectonico (reutiliza la Fase 4).
+- [`to-be/03-specs/`](to-be/03-specs/specs.md): contratos API/eventos, esquemas de datos y specs por modulo (enlaza el catalogo 04b).
+- [`to-be/04-ux/`](to-be/04-ux/ux.md): service blueprints, journeys y wireflows de originacion, pagos, B2C y cobranza.
+- [`to-be/05-pruebas/`](to-be/05-pruebas/pruebas.md): estrategia, matriz de cobertura, Dry-Run/Tabletop y criterios de aceptacion.
+- [`to-be/06-insumos-estimacion/`](to-be/06-insumos-estimacion/insumos-estimacion.md): descomposicion por modulo + tabla parametrica recalibrable (cifras [DOC-ASSUMPTION]).
+- [`to-be/00-registros/`](to-be/README.md): ambiguedades, riesgos, consideraciones, restricciones y prerrequisitos, cada entrada con ID + nivel arquitectonico + severidad/impacto + estado + etiqueta epistemica.
+
+> El dossier se regenera con `python3 advisory-system/quickstart.py --phase all` (es idempotente: una segunda corrida deja git limpio).
+
 ## Catalogo complementario
 
 Ademas de los 7 informes por fase, el motor genera un catalogo **exhaustivo de Historias de Usuario + BDD/Gherkin** que cubre TODO el universo de modulos de Credi10 (sin muestreo), complemento de la Fase 4:

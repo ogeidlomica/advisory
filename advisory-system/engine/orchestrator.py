@@ -22,6 +22,7 @@ from engine.model import GoldenThread, Phase, raci_v_for
 from engine.phases import CATALOG_FILENAME, PHASE_ORDER, load_phases
 from phases import build_readme
 from phases import catalog as catalog_mod
+from phases import dossier as dossier_mod
 from phases.builders import BuildContext
 
 import roles as roles_pkg
@@ -44,6 +45,8 @@ class RunSummary:
     kb_dir: Optional[str] = None
     kb_file_count: int = 0
     catalog_path: Optional[str] = None
+    dossier_dir: Optional[str] = None
+    dossier_file_count: int = 0
 
     def log_lines(self) -> List[str]:
         out = []
@@ -58,6 +61,11 @@ class RunSummary:
             )
         if self.catalog_path:
             out.append(f"[Catalogo HU/Gherkin] -> {self.catalog_path}")
+        if self.dossier_dir:
+            out.append(
+                f"[Dossier TO-BE] {self.dossier_file_count} archivos -> "
+                f"{self.dossier_dir}"
+            )
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
         return out
@@ -97,6 +105,11 @@ class AdvisoryOrchestrator:
             # Auxiliary exhaustive HU/Gherkin catalog (FEAT-003), complement of
             # Phase 4, written deterministically from phases/modules.py.
             summary.catalog_path = self._write_catalog()
+            # TO-BE project dossier (task TO-BE dossier): one subfolder per SDLC
+            # stage + cross-cutting registries, written deterministically.
+            dossier_dir, dossier_count = self._write_dossier()
+            summary.dossier_dir = dossier_dir
+            summary.dossier_file_count = dossier_count
             summary.readme_path = self._write_readme()
         else:
             if phase not in self.phases:
@@ -185,6 +198,12 @@ class AdvisoryOrchestrator:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(body)
         return path
+
+    def _write_dossier(self):
+        """Write the TO-BE project dossier tree and return (dir, file_count)."""
+        paths = dossier_mod.write(self.out_dir, self.knowledge_base)
+        dossier_dir = os.path.join(self.out_dir, dossier_mod.DOSSIER_DIRNAME)
+        return dossier_dir, len(paths)
 
     def _write_readme(self) -> str:
         body = build_readme(self.phases, self.roles, self.corpus.documents)

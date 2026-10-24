@@ -270,6 +270,36 @@ def build_readme(phases: Dict[str, Phase], roles: Dict[str, object], documents: 
     from engine.phases import CATALOG_FILENAME
     lines += [
         "",
+        "## Dossier de proyecto TO-BE (por etapa del SDLC)",
+        "",
+        "Ademas de los informes por fase, el motor genera de forma "
+        "**determinista** un **dossier de proyecto TO-BE** en "
+        "[`to-be/`](to-be/README.md), organizado con **una subcarpeta por "
+        "etapa/practica del SDLC** mas **registros transversales** del proyecto "
+        "en todos los niveles arquitectonicos (negocio, aplicacion, datos, "
+        "integracion, infraestructura, seguridad):",
+        "",
+        "- [`to-be/01-requisitos/`](to-be/01-requisitos/requisitos.md): "
+        "requisitos funcionales por modulo + NFR ISO 25010 + reglas de negocio.",
+        "- [`to-be/02-arquitectura/`](to-be/02-arquitectura/arquitectura.md): "
+        "vistas TO-BE por nivel arquitectonico (reutiliza la Fase 4).",
+        "- [`to-be/03-specs/`](to-be/03-specs/specs.md): contratos API/eventos, "
+        "esquemas de datos y specs por modulo (enlaza el catalogo 04b).",
+        "- [`to-be/04-ux/`](to-be/04-ux/ux.md): service blueprints, journeys y "
+        "wireflows de originacion, pagos, B2C y cobranza.",
+        "- [`to-be/05-pruebas/`](to-be/05-pruebas/pruebas.md): estrategia, "
+        "matriz de cobertura, Dry-Run/Tabletop y criterios de aceptacion.",
+        "- [`to-be/06-insumos-estimacion/`]"
+        "(to-be/06-insumos-estimacion/insumos-estimacion.md): descomposicion por "
+        "modulo + tabla parametrica recalibrable (cifras [DOC-ASSUMPTION]).",
+        "- [`to-be/00-registros/`](to-be/README.md): ambiguedades, riesgos, "
+        "consideraciones, restricciones y prerrequisitos, cada entrada con ID + "
+        "nivel arquitectonico + severidad/impacto + estado + etiqueta "
+        "epistemica.",
+        "",
+        "> El dossier se regenera con `python3 advisory-system/quickstart.py "
+        "--phase all` (es idempotente: una segunda corrida deja git limpio).",
+        "",
         "## Catalogo complementario",
         "",
         "Ademas de los 7 informes por fase, el motor genera un catalogo "

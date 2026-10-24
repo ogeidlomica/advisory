@@ -8,8 +8,9 @@ un indice), con diagramas Mermaid, tablas y veredictos Go/No-Go.
 Los informes generados viven en [`../advisory-credi10-2.0/`](../advisory-credi10-2.0/)
 y son 100% reproducibles re-ejecutando el quickstart. Ademas de los 7 informes
 por fase, `--phase all` ahora **tambien regenera la Base de Conocimiento**
-(`../knowledge-base/`) y un **catalogo exhaustivo de Historias de Usuario +
-BDD/Gherkin** (`04b-catalogo-historias.md`).
+(`../knowledge-base/`), un **catalogo exhaustivo de Historias de Usuario +
+BDD/Gherkin** (`04b-catalogo-historias.md`) y un **dossier de proyecto TO-BE**
+organizado por etapa del SDLC (`../advisory-credi10-2.0/to-be/`).
 
 > **Alcance: solo advisory.** Todo lo que produce este motor es
 > **documentacion** para la siguiente etapa (informes Markdown, catalogo de HU,
@@ -66,6 +67,10 @@ del cliente, pensadas para reutilizarse en otros contextos/corpus:
 - **`ai-opportunities-catalog`** - oportunidades de IA modeladas como skill
   declarativo (dos tracks: IA-como-producto e IA-como-acelerador-de-
   construccion), **no hardcodeadas** en el codigo.
+- **`sdlc-project-dossier`** - politica de producir el entregable TO-BE como un
+  **dossier con una subcarpeta por etapa del SDLC** mas registros transversales
+  (ambiguedades/riesgos/consideraciones/restricciones/prerrequisitos) en todos
+  los niveles arquitectonicos, generado de forma determinista.
 
 El motor las carga con `engine/skills.py` (`SkillsLoader`): descubre los
 `SKILL.md`, parsea el frontmatter y convierte el catalogo de IA en entradas
@@ -109,6 +114,52 @@ critica y dependencias aciclicas, una **evaluacion del dueno de negocio** sobre
 la suficiencia para crear el proyecto y un **analisis de riesgo de desfase de
 tiempos** (schedule-slip) con veredicto Go/No-Go. Todas las cifras de esfuerzo
 son **[DOC-ASSUMPTION]** (esfuerzo relativo, recalibrable).
+
+## Dossier de proyecto TO-BE por etapa del SDLC (`../advisory-credi10-2.0/to-be/`)
+
+`phases/dossier.py` genera, de forma **determinista** y durante `--phase all`,
+un **dossier de proyecto TO-BE** pensado para **ejecutar el proyecto**: una
+subcarpeta por etapa/practica del SDLC mas registros transversales en todos los
+niveles arquitectonicos. No se escribe a mano; se regenera con el quickstart y
+reutiliza las fuentes unicas de verdad del motor (`phases/modules.py`,
+`phases/phase4.py` SBBs, `phases/phase3.py` gaps/relievers/ABBs) y la Base de
+Conocimiento, sin duplicarlas.
+
+Estructura (bajo `../advisory-credi10-2.0/to-be/`):
+
+- **`00-registros/`** - registros **transversales** del proyecto, uno por
+  archivo: `ambiguedades.md` (AMB-), `riesgos.md` (RSK-),
+  `consideraciones.md` (CON-), `restricciones.md` (RST-) y
+  `prerrequisitos.md` (PRE-). Cada entrada lleva **ID**, **nivel
+  arquitectonico** (`negocio`, `aplicacion`, `datos`, `integracion`,
+  `infraestructura`, `seguridad`), **severidad/impacto**, **estado** y una
+  **etiqueta epistemica** donde aplique. Incluyen, entre otros, la tension de
+  alcance +150 apps / +200 BDs de Studio F vs. ~20 componentes de Credi10
+  [DOC-CONFLICT], el riesgo de lectura directa a la BD del ERP Siesa, la
+  obsolescencia de .NET Framework 4.8 / .NET Core 3.1, la dependencia de la VPN
+  IPSec con Telmex y el licenciamiento de SQL Server Enterprise.
+- **`01-requisitos/`** - requisitos funcionales por modulo + NFR ISO/IEC 25010
+  + reglas de negocio + trazabilidad al Hilo Dorado.
+- **`02-arquitectura/`** - vistas TO-BE por nivel (negocio, aplicacion C4 N1-3,
+  datos con ERD, integracion con desacople de Siesa, infraestructura AWS,
+  seguridad); reutiliza/enlaza la Fase 4.
+- **`03-specs/`** - contratos OpenAPI/AsyncAPI esbozados, esquemas de datos y
+  specs por modulo; enlaza el catalogo 04b de HU/Gherkin.
+- **`04-ux/`** - service blueprints, customer journeys y wireflows de
+  originacion, pagos, B2C y cobranza.
+- **`05-pruebas/`** - estrategia por niveles, matriz de cobertura HU->casos,
+  plan de Dry-Run/Tabletop y criterios de aceptacion.
+- **`06-insumos-estimacion/`** - descomposicion por modulo, tabla parametrica
+  recalibrable y supuestos; consolida/enlaza la estimacion de la Fase 5 (todas
+  las cifras de esfuerzo son **[DOC-ASSUMPTION]**).
+- **`README.md`** - indice del dossier con el mapa de la estructura y el comando
+  de regeneracion.
+
+Cada capitulo cumple el contrato estructural (>= 1 diagrama Mermaid, >= 1 tabla
+y etiquetas epistemicas). La politica declarativa que respalda este entregable
+es el skill `sdlc-project-dossier` en `.kiro/skills/` (generica y agnostica del
+cliente). La regeneracion es **determinista**: una segunda corrida de
+`--phase all` deja `git status --short` vacio.
 
 ## Reutilizar las politicas con otro corpus/cliente
 
@@ -161,6 +212,7 @@ advisory-system/
 │   ├── builders.py        # BUILDERS (0..6) + build_readme (indice)
 │   ├── modules.py         # UNICA fuente de verdad del universo de modulos (MOD-01..MOD-17)
 │   ├── catalog.py         # render de 04b-catalogo-historias.md (HU/Gherkin exhaustivo)
+│   ├── dossier.py         # dossier TO-BE por etapa del SDLC + registros transversales
 │   └── phase0.py .. phase6.py  # contenido fundamentado en el corpus por fase
 └── tests/                 # pruebas unittest (stdlib)
     └── test_engine.py
@@ -212,7 +264,8 @@ evaluan GO con el corpus real.
 
 ## Como se regeneran los informes
 
-Los archivos de `advisory-credi10-2.0/*.md` **y** la Base de Conocimiento
+Los archivos de `advisory-credi10-2.0/*.md`, el **dossier TO-BE**
+`advisory-credi10-2.0/to-be/` **y** la Base de Conocimiento
 `../knowledge-base/` son **artefactos generados**: se versionan para que el
 resultado del advisory sea visible, pero siempre pueden reproducirse con
 `python3 advisory-system/quickstart.py --phase all`. La regeneracion es
