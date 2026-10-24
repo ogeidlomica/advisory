@@ -1150,5 +1150,197 @@ class TestPipelineProducesCatalog(unittest.TestCase):
         self.assertIn("```gherkin", content)
 
 
+_EPISTEMIC_TAGS = (
+    "[VERIFIED-FACT]", "[DOC-ASSUMPTION]", "[DOC-CONFLICT]", "[EPISTEMIC-VOID]",
+)
+
+
+class TestToBeDossier(unittest.TestCase):
+    """TO-BE dossier task: lock in the deterministic SDLC-stage dossier tree.
+
+    Mirrors ``TestReadmeIndexAndPipeline``: a single ``--phase all`` run in
+    ``setUpClass`` materializes the dossier on disk, then the tests read the
+    generated files. Assertions exercise the REAL generated content, so they
+    would fail if the dossier generator (``phases/dossier.py``) were reverted.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        from phases import dossier as dossier_mod
+
+        cls.dossier_mod = dossier_mod
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        cls.base = os.path.join(cls.out_dir, dossier_mod.DOSSIER_DIRNAME)
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+
+        def _read(relpath):
+            with open(os.path.join(cls.base, relpath), encoding="utf-8") as fh:
+                return fh.read()
+
+        cls._read = staticmethod(_read)
+        cls.stage_files = {
+            "requisitos": os.path.join("01-requisitos", "requisitos.md"),
+            "arquitectura": os.path.join("02-arquitectura", "arquitectura.md"),
+            "specs": os.path.join("03-specs", "specs.md"),
+            "ux": os.path.join("04-ux", "ux.md"),
+            "pruebas": os.path.join("05-pruebas", "pruebas.md"),
+            "estimacion": os.path.join("06-insumos-estimacion",
+                                       "insumos-estimacion.md"),
+        }
+        cls.stage_content = {k: _read(v) for k, v in cls.stage_files.items()}
+        cls.registry_slugs = [
+            "ambiguedades", "riesgos", "consideraciones",
+            "restricciones", "prerrequisitos",
+        ]
+        cls.registry_content = {
+            slug: _read(os.path.join("00-registros", f"{slug}.md"))
+            for slug in cls.registry_slugs
+        }
+
+    # -- 1. tree structure --------------------------------------------------- #
+    def test_dossier_tree_structure(self):
+        self.assertTrue(os.path.isdir(self.base),
+                        "la carpeta base to-be/ debe existir")
+        self.assertTrue(os.path.isfile(os.path.join(self.base, "README.md")),
+                        "el dossier debe tener un README.md")
+        self.assertTrue(os.path.isdir(os.path.join(self.base, "00-registros")),
+                        "debe existir 00-registros/")
+        for sub in ("01-requisitos", "02-arquitectura", "03-specs", "04-ux",
+                    "05-pruebas", "06-insumos-estimacion"):
+            self.assertTrue(
+                os.path.isdir(os.path.join(self.base, sub)),
+                f"debe existir la subcarpeta {sub}/",
+            )
+            # Y cada etapa tiene al menos un capitulo .md en disco.
+            mds = [f for f in os.listdir(os.path.join(self.base, sub))
+                   if f.endswith(".md")]
+            self.assertTrue(mds, f"{sub}/ debe contener al menos un capitulo .md")
+
+    # -- 2. structural contract per SDLC chapter ----------------------------- #
+    def test_each_chapter_honors_structural_contract(self):
+        for stage, content in self.stage_content.items():
+            self.assertIn("```mermaid", content,
+                          f"{stage} debe tener al menos un bloque mermaid")
+            table_lines = [ln for ln in content.splitlines()
+                           if ln.lstrip().startswith("|")]
+            self.assertTrue(
+                table_lines,
+                f"{stage} debe tener al menos una tabla markdown",
+            )
+            self.assertTrue(
+                any(tag in content for tag in _EPISTEMIC_TAGS),
+                f"{stage} debe tener al menos una etiqueta epistemica",
+            )
+
+    # -- 3. cross-cutting registries ----------------------------------------- #
+    def test_registries_exist_with_ids_levels_and_columns(self):
+        prefixes = {
+            "ambiguedades": "AMB-",
+            "riesgos": "RSK-",
+            "consideraciones": "CON-",
+            "restricciones": "RST-",
+            "prerrequisitos": "PRE-",
+        }
+        niveles = ["negocio", "aplicacion", "datos", "integracion",
+                   "infraestructura", "seguridad"]
+        # Sanity: our expected levels match the generator's NIVELES.
+        self.assertEqual(sorted(niveles), sorted(self.dossier_mod.NIVELES))
+
+        levels_seen = set()
+        for slug in self.registry_slugs:
+            content = self.registry_content[slug]
+            self.assertIn(prefixes[slug], content,
+                          f"{slug}.md debe contener el prefijo {prefixes[slug]}")
+            # Cada registro declara un ID concreto (p. ej. AMB-001).
+            self.assertRegex(
+                content, prefixes[slug] + r"\d{3}",
+                f"{slug}.md debe tener al menos un ID {prefixes[slug]}xxx",
+            )
+            self.assertIn("Estado", content,
+                          f"{slug}.md debe tener columna Estado")
+            self.assertTrue(
+                ("Severidad" in content) or ("Impacto" in content)
+                or ("Prioridad" in content),
+                f"{slug}.md debe tener severidad/impacto/prioridad",
+            )
+            for nivel in niveles:
+                if nivel in content:
+                    levels_seen.add(nivel)
+        # Los seis niveles arquitectonicos aparecen en el conjunto de registros.
+        self.assertEqual(
+            levels_seen, set(niveles),
+            "los registros deben cubrir los seis niveles arquitectonicos",
+        )
+
+    def test_registries_carry_key_epistemic_and_corpus_items(self):
+        amb = self.registry_content["ambiguedades"]
+        rsk = self.registry_content["riesgos"]
+        self.assertIn("[EPISTEMIC-VOID]", amb,
+                      "ambiguedades debe tener al menos un [EPISTEMIC-VOID]")
+        # Tension de alcance +150 aplicaciones / +200 bases de datos.
+        self.assertIn("+150", amb)
+        self.assertIn("+200", amb)
+        # Riesgo de lectura directa a la BD del ERP Siesa.
+        low_rsk = rsk.lower()
+        self.assertIn("siesa", low_rsk)
+        self.assertTrue(
+            ("directo a la base de datos" in low_rsk)
+            or ("directa a la bd" in low_rsk),
+            "riesgos debe registrar la lectura directa a la BD del ERP Siesa",
+        )
+
+    # -- 4. corpus grounding ------------------------------------------------- #
+    def test_corpus_grounding_real_tokens(self):
+        req = self.stage_content["requisitos"]
+        arch = self.stage_content["arquitectura"]
+        specs = self.stage_content["specs"]
+        est = self.stage_content["estimacion"]
+
+        for token in ("CrossCore", "Inspektor", "Datacredito"):
+            self.assertIn(token, req, f"requisitos debe mencionar {token}")
+        for token in ("Siesa", "WSO2", "AWS", ".NET 8"):
+            self.assertIn(token, arch, f"arquitectura debe mencionar {token}")
+        for token in ("Siesa", "PayU"):
+            self.assertIn(token, specs, f"specs debe mencionar {token}")
+        self.assertIn("[DOC-ASSUMPTION]", est,
+                      "el capitulo de estimacion debe llevar [DOC-ASSUMPTION]")
+
+    # -- 5. determinism of the dossier writer ------------------------------- #
+    def test_write_is_deterministic(self):
+        import tempfile
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        docs = CorpusLoader(_REPO_ROOT).load()
+        kb = KnowledgeBase.from_documents(docs)
+        with tempfile.TemporaryDirectory() as tmp:
+            first = self.dossier_mod.write(tmp, kb)
+            self.assertTrue(first, "write debe devolver paths escritos")
+            # 1 README + 5 registros + 6 capitulos = 12 archivos.
+            self.assertEqual(len(first), 12)
+            # Debe devolver una lista ordenada de paths.
+            self.assertEqual(first, sorted(first))
+            before = {p: open(p, encoding="utf-8").read() for p in first}
+            second = self.dossier_mod.write(tmp, kb)
+            self.assertEqual(first, second,
+                             "los paths deben ser estables entre corridas")
+            after = {p: open(p, encoding="utf-8").read() for p in second}
+            self.assertEqual(before, after,
+                             "el dossier debe ser byte-identico entre corridas")
+
+    # -- 6. README of the report set links the dossier ---------------------- #
+    def test_report_readme_links_dossier(self):
+        with open(os.path.join(self.out_dir, "README.md"),
+                  encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertIn("to-be/README.md", readme,
+                      "el README debe enlazar el dossier (to-be/README.md)")
+
+
 if __name__ == "__main__":
     unittest.main()
