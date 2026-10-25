@@ -33,6 +33,7 @@ from phases import commercial_proposal as proposal_mod
 from phases import dossier as dossier_mod
 from phases import executive_report as exec_report_mod
 from phases import technical_report as tech_report_mod
+from phases import site as site_mod
 from phases.builders import BuildContext
 
 import roles as roles_pkg
@@ -61,6 +62,7 @@ class RunSummary:
     exec_report_path: Optional[str] = None
     tech_report_dir: Optional[str] = None
     tech_report_file_count: int = 0
+    site_path: Optional[str] = None
 
     def log_lines(self) -> List[str]:
         out = []
@@ -91,6 +93,8 @@ class RunSummary:
             )
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
+        if self.site_path:
+            out.append(f"[HTML descargable] -> {self.site_path}")
         return out
 
 
@@ -148,6 +152,9 @@ class AdvisoryOrchestrator:
             summary.tech_report_dir = tech_dir
             summary.tech_report_file_count = tech_count
             summary.readme_path = self._write_readme()
+            # Standalone downloadable HTML viewer (single self-contained file,
+            # no fetch) that embeds the three reports for local viewing.
+            summary.site_path = self._write_site()
         else:
             if phase not in self.phases:
                 raise ValueError(f"Fase desconocida: {phase}")
@@ -282,3 +289,12 @@ class AdvisoryOrchestrator:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(body)
         return path
+
+    def _write_site(self) -> str:
+        """Build the standalone downloadable HTML viewer of the 3 reports.
+
+        out_dir is the report folder (advisory-credi10-2.0); the site builder
+        expects the repo root (its parent).
+        """
+        repo_root = os.path.dirname(self.out_dir)
+        return site_mod.build_site(repo_root)
