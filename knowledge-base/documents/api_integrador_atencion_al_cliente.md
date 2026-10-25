@@ -6,34 +6,40 @@
 | tipo | pdf |
 | rol (prioridad) | secondary |
 | tamano (bytes) | 910137 |
-| longitud raw | 3605911 |
-| longitud limpia | 3595967 |
-| ratio de cobertura (crudo, legado) | 1.00000 |
-| caracteres de texto util | 25043 |
-| texto util real (palabras / bytes extraidos) | 0.70% |
-| banda de cobertura (por texto util real) | nula |
-| flag epistemico | [EPISTEMIC-VOID] |
-| metodo de ingesta | OCR pendiente (motor no disponible en este entorno) |
+| longitud raw | 17167 |
+| longitud limpia | 15395 |
+| ratio de cobertura (crudo, legado) | 0.01692 |
+| caracteres de texto util | 9901 |
+| texto util real (palabras / bytes extraidos) | 64.31% |
+| banda de cobertura (por texto util real) | alta |
+| flag epistemico | [VERIFIED-FACT] |
+| metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `230c3c9a38f8a8dbd25ffa205504ce39fb2817ee7b3fa7e5948051982dde6a31` |
 
 ## Resumen jerarquico
 
-- Documento 'Api Integrador Atencion al cliente.pdf' (PDF): ingerido; la capa de texto es ruido/fragmentos (texto util real 0.70% de lo extraido), sin contenido explotable. PDF basado en imagen, marcado [EPISTEMIC-VOID], OCR pendiente. No se fabrica contenido.
+- Documento 'Api Integrador Atencion al cliente.pdf' (PDF): 15395 caracteres limpios extraidos (zlib+regex), texto util real 64.31%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES API Integrador Atención Al Cliente STF GROUP S.A. INFORMATICA – Py. CR...
+- Seccion 2: rtificado Al Día ................................ ................................ ................................ . 9 Generar Certificado de Deuda ..............
+- Seccion 3: /o Comentarios ................................ ................................ ....... 13 2. CASOS DE PRUEBAS UNITARIAS 17 Código:FT - DG - 00 2 Versión:001 F...
+- Seccion 4: tificado paz y salvo ● Crear endpoint para c rear y enviar certificado tributario ● Crear endpoint para crear y enviar certificado de cliente al día ● Crear end...
+- Seccion 5: on del archivo PD F, envió del archivo por correo electrónico. Creditos.BLL Proyecto que contiene las clases y métodos que implementan la lógica de negocio de l...
+- Seccion 6: validación de entrada, manejo de respuestas HTTP • AccountController.cs: Autenticación JWT . • ServicioAtencionClienteWolkvoxController.cs: Endpoints principale...
 
 ## Hechos clave (trazables)
 
 | # | Hecho | Tokens |
 | --- | --- | --- |
-| 1 | 08 / 06 /2021 es-AR FOR MA TO DE DESARRO LL O E INTEGRACIONES API Int eg rado r At en ci ó n Al Cli en te STF GROUP S . | API |
-| 2 | DETA LL E TECNICO R eq ue ri mi en to es-CL es-CL Di spo ne r API pa ra sumin i st r ar i nfor m aci ón de l os cl i en t es de Cr ed i 10 y ge ne r aci ón de cert ifi cad os PDF . | API |
-| 3 | At en ci on Ci en te API propo r ci on a lo s en d po i nt . | API |
-| 4 | D ato s p ara pa z y sal vo R esp on seInt eg r ad orA t en ci on Err orCl i en t eD TO : | RCL |
-| 5 | 08 / 06 /2021 P aramet ri zac i on es D es cri pc i ón G rupo V alor Li nk ba se con exi ón con s umo API Cr ed it os. | API |
-| 6 | C on sul tarCli en te E ntr ad a: | RCL |
-| 7 | t bl _l og _tr an sacci o ne s_APIs_at en ci on _cl i en te I nfo rm aci ón R eg i st r ad a : | API |
-| 8 | j son se en con tr ará la col ecci ón qu e po drá ser e xpo rt ad a a p ostm an con t od as l as co nsu lt as qu e po drán ser r ea li zad as al API de Cr ed it os . | API |
-| 9 | La API de At en ci ón al Cli en te e st á di señ ad a pa ra ser con su mi da po r m últipl es si st em as qu e r eq ui eren acce so a i nf orm aci ón de cl i en t es y ge ne r aci ón de cer tific ad os de m an era au t oma ti zad a. | API |
-| 10 | Wol kvox con sume C on s ul t arCl i en te par a val i da r y ob t en er i nfo rm aci ón 4. | RCL |
-| 11 | 08 / 06 /2021 La doc umenta ción pa ra f utura s mod ific ac iones se e nc ue ntr a dispo nibl e en wvx St udio - wolkvox þ£$ýt'ý}þæßÿýüÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿõõõíííÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ... | WOLKVOX |
-| 12 | co/ cre d i1 0sac/Ge ne ra rP azY Salvo / 1004518052 ID CASO DE PRUEBA RESULTADO ESPERADO APR OB ADO 1 Cons um oAPI en d po i nt Acc ou nt O bte ne r t ok en de au te nti c ac i ón SI 2 Cons um oAPI en d po i nt Cons ul tarCl ie nte O bte ne r la I nfo rm ac i ó n de l cli en te SI 3 Cons um oA pi en d po i nt G en era... | RCL, API |
+| 1 | 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES API Integrador Atención Al Cliente STF GROUP S.A. | integrador, API |
+| 2 | CREDI10 SOFTWARE PROPIO Cali , viernes 26 de diciembre del 202 5 Código:FT - DG - 00 2 Versión:001 Fecha: | Credi10 |
+| 3 | DETALLE TECNICO Requerimiento Disponer API para suministrar información de los clientes de C redi10 y generación de certificados PDF . | API |
+| 4 | Detallar componentes existentes Para el desarrollo de los requerimientos se cuenta con una solución desarrollada en .NET Framework 4.8 . | .NET |
+| 5 | Se realiza creación del proyecto web API “ Creditos.Integrador.AtencionCiente ” donde se establece el funcionamiento de los requerimientos correspondientes a la generación de los certificados anteriormente mencionados . | integrador, API |
+| 6 | Nombre del Componente Descripción SOLUCION Creditos.Integrador.AtencionCiente API proporciona los endpoint . | integrador, API |
+| 7 | BLL.AtencionClienteApiController Controlador implementad o para evaluar la viabilidad de la generación del certificado para el cliente, creacion del archivo PD F, envió del archivo por correo electrónico. | API |
+| 8 | Este proyecto se integra con el proyecto Creditos.Integrador.AtencionCiente, el proyecto DAL y el proyecto DTO. | integrador |
+| 9 | Creditos.DAL Proyecto encargado de tener el acceso y la interaccióna la base de datos C10_Credi10NET de la solución. | Credi10, C10_Credi10NET |
+| 10 | 08/06/2021 Rotativa Herramienta de línea de comandos para representar HTML en PDF, encargado de crear los PDF de los certificados BASE DE DATOS C10_Credi10NET Tablas y Procedimientos almacenados 1.1.2. | Credi10, C10_Credi10NET |
+| 11 | Detallar funcionalidades Diagrama de Componentes Arquitectura por Capas Capa Web (Creditos.Integrador.AtencionCiente) Responsabilidad : | integrador |
+| 12 | • ServicioAtencionClienteWolkvoxController.cs: | WOLKVOX |
 

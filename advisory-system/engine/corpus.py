@@ -77,20 +77,14 @@ _PAREN_RE = re.compile(rb"\((?:[^()\\]|\\.)*\)")
 _UNESCAPE_RE = re.compile(rb"\\([()\\])")
 
 
-def extract_pdf_text(path: str) -> str:
-    """Extract a best-effort text layer from a PDF using only the stdlib.
+def _extract_pdf_text_legacy(data: bytes) -> str:
+    """Legacy best-effort extraction: latin-1 of every ``( ... )`` literal.
 
-    For every ``stream ... endstream`` block we try ``zlib.decompress`` (the
-    FlateDecode filter). Undecodable streams are skipped silently so the loader
-    never crashes on image-heavy PDFs. Within each decoded stream we pull the
-    literal strings of ``Tj``/``TJ`` operators (text between parentheses),
-    unescape ``\\(``, ``\\)`` and ``\\\\`` and decode as latin-1.
+    Retained as the TOLERANT fallback for the font-aware extractor. For every
+    ``stream ... endstream`` block we try ``zlib.decompress`` (FlateDecode);
+    undecodable streams are skipped silently. Within each decoded stream we pull
+    literal strings, unescape ``\\(``, ``\\)`` and ``\\\\`` and decode latin-1.
     """
-    try:
-        with open(path, "rb") as fh:
-            data = fh.read()
-    except OSError:
-        return ""
     texts: List[str] = []
     for m in _STREAM_RE.finditer(data):
         try:
@@ -104,6 +98,61 @@ def extract_pdf_text(path: str) -> str:
             except Exception:
                 pass
     return " ".join(texts)
+
+
+def extract_pdf_text(path: str) -> str:
+    """Extract a best-effort text layer from a PDF using only the stdlib.
+
+    Delegates to the per-font, ToUnicode-aware extractor in
+    :mod:`engine.pdf_text`, which tracks the active font (``Tf``), decodes both
+    ``( ... )`` literals and ``< ... >`` hex strings in ``Tj``/``TJ`` operators,
+    and maps glyph codes through each embedded font's ``/ToUnicode`` CMap and
+    ``/Encoding /Differences`` table. It reads only inside ``BT ... ET`` text
+    objects, so binary image/font-program bytes never leak into the text.
+
+    TOLERANT TO FAILURE: if the font-aware pass raises or yields nothing usable,
+    we fall back to the legacy latin-1 literal pull so extraction never
+    regresses or crashes. Deterministic (stable ordering, no timestamps).
+    """
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read()
+    except OSError:
+        return ""
+
+    try:
+        from engine.pdf_text import extract_pdf_text_font_aware
+        font_aware = extract_pdf_text_font_aware(data)
+    except Exception:
+        font_aware = ""
+
+    legacy = _extract_pdf_text_legacy(data)
+
+    # Decide between the two by the HONEST useful-text signal (real-word chars),
+    # not raw length: the legacy pass often returns a far LARGER string that is
+    # mostly binary-image noise, whereas the font-aware pass returns clean text.
+    # We keep whichever yields more real-word characters, falling back to legacy
+    # when the font-aware pass recovered nothing (full tolerance).
+    if font_aware and font_aware.strip():
+        try:
+            from engine.knowledge import count_useful_chars
+            fa_clean = clean_text(font_aware)
+            lg_clean = clean_text(legacy) if legacy else ""
+            fa_useful = count_useful_chars(fa_clean)
+            lg_useful = count_useful_chars(lg_clean)
+            fa_ratio = fa_useful / len(fa_clean) if fa_clean else 0.0
+            lg_ratio = lg_useful / len(lg_clean) if lg_clean else 0.0
+        except Exception:
+            # If the metric is unavailable for any reason, prefer the font-aware
+            # text (it is the clean-by-construction result).
+            return font_aware
+        # Prefer the font-aware text whenever it recovered real words and its
+        # useful-text RATIO is at least as high as legacy's. The legacy pass
+        # often has a higher absolute real-word count only because it also dumps
+        # binary-image noise that is pure padding; the honest signal is density.
+        if fa_useful > 0 and fa_ratio >= lg_ratio:
+            return font_aware
+    return legacy
 
 
 # --------------------------------------------------------------------------- #

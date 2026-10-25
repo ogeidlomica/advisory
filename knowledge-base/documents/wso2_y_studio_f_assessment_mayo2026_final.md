@@ -6,34 +6,40 @@
 | tipo | pdf |
 | rol (prioridad) | primary |
 | tamano (bytes) | 1490004 |
-| longitud raw | 1695397 |
-| longitud limpia | 1673322 |
-| ratio de cobertura (crudo, legado) | 1.00000 |
-| caracteres de texto util | 26846 |
-| texto util real (palabras / bytes extraidos) | 1.60% |
-| banda de cobertura (por texto util real) | nula |
-| flag epistemico | [EPISTEMIC-VOID] |
-| metodo de ingesta | OCR pendiente (motor no disponible en este entorno) |
+| longitud raw | 33333 |
+| longitud limpia | 27354 |
+| ratio de cobertura (crudo, legado) | 0.01836 |
+| caracteres de texto util | 19076 |
+| texto util real (palabras / bytes extraidos) | 69.74% |
+| banda de cobertura (por texto util real) | alta |
+| flag epistemico | [VERIFIED-FACT] |
+| metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `a8f03b42fa08b2021dc94f002ff581926f228cc00f42cbb95060fa93646972fd` |
 
 ## Resumen jerarquico
 
-- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): ingerido; la capa de texto es ruido/fragmentos (texto util real 1.60% de lo extraido), sin contenido explotable. PDF basado en imagen, marcado [EPISTEMIC-VOID], OCR pendiente. No se fabrica contenido.
+- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 27354 caracteres limpios extraidos (zlib+regex), texto util real 69.74%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Seccion 1: Assessment de Arquitectura Fecha: Mayo, 2026 Index 1. Objetivo del Documento ................................ ................................ ....................
+- Seccion 2: GID ................................ ................................ ................................ ........... 7 3.4. Architectura PLM ........................
+- Seccion 3: ...... ......... 15 5.1. Simplificar y estandarizar las integraciones ................................ ................................ ...... 15 5.2. Gestionar...
+- Seccion 4: de mejora y en su arquitectura, donde las soluciones WSO2 API Platform y WSO2 Integration Platform pueden ayudar a modernizar su ecosistema, además de proporcio...
+- Seccion 5: orar la eficiencia operativa, reduciendo significativamente el Time - to - Market y la carga operativa manual. 2.1. Puntos dolores principales ● Complejidad de...
+- Seccion 6: la falta de integridad de los datos, los usuarios hacen sus controles manualmente mediante Excel. ● Falta de Gobernanza y Control ○ Varias aplicaciones .NET des...
 
 ## Hechos clave (trazables)
 
 | # | Hecho | Tokens |
 | --- | --- | --- |
-| 1 | Obje ti vo de l Docum en to Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arqu ite ct u ra , donde la s solu ciones WS O2 A PI P la t for m y WS O2 In teg rati on Pl at for m pueden ay ud ar a mode rnizar su e cos is tema, ad em ás de proporcionar beneficios de gobernanza y ge... | Studio F, API |
-| 2 | Con te xt o de N egó c io Studio F cuenta con una arquitectura fragmentada y un ecosistema de sistemas y ap li ca ci ones de sac tu al izados, comp ue st os por m ás de 150 ap li ca ci ones . | Studio F |
-| 3 | Actualmente , el e cosist ema depende de in teg racion es "pu nto a punto " y p ro ceso s b at ch ( archivos p la nos) h ac ia su ERP Siesa. | Siesa |
-| 4 | # Ori ge n Des ti no Protocolo Descr ip ci ó n 1 Devoluciones Autom á ticas VTEX JSON / HTTP Consulta Devoluciones y Cr ea G if tC ards 2 Devoluciones Autom á ticas Siesa Unoee XML / SOAP Crea Notas de Cr é dito 3 G estor de Pedidos Siesa Unoee XML / SOAP Crea RQI 4 Auto Registro Siesa Unoee XML / SOAP Fideliza Clie nt... | Credi10, Siesa, UnoEE, UNOEE, VTEX, Pentaho, Numrot, Ecommerce |
-| 5 | A PI G at e way y Co nt ro l Pl an e ( A PI Pu bl is her, Deve loper Portal , Tr aff ic M an ager y Key M an ag er). | Portal |
-| 6 | Es te mode lo sopor t ará el volumen de llamadas de APIs compartido por Studio F con tolerancia a fallos y sin añ ad ir comp lej id ad a la arq uite ct u ra. | Studio F, API |
-| 7 | En e st e d ia g rama, el In teg rator se en carga de cre ar la s in teg racione s con los sistemas y aplicaciones internas de Studio F, exponi é ndolas como APIs para que sean gestionadas por el API Manager . | Studio F, API |
-| 8 | Esto asegura la gobernanza , seguridad y el reuso de di ch as APIs. | API |
-| 9 | F in al mente , se contempla que l as AP Is de las ap li ca ci ones externas ( como Vtex, Ora cl e WMS y otras) tambi é n se an ge st io nad as por el API Manager , funcionando como un punto centralizado de gesti ó n y acceso a todas las AP Is , tanto intern as co mo extern as . | VTEX, API |
-| 10 | Simplificar y estandarizar las integraciones Actualmente , la integraci ó n con el ERP Siesa es muy r í gida y compleja , cuenta con aplicaciones . | Siesa |
-| 11 | El ERP Siesa ofrece para su in teg ración un solo WS DL p ara tod as su s ope racione s y, debido a e sa co mplejidad, en la mayor í a de lo s c as os las in te gr ac io ne s se rea li z an d ir ec ta men te sobre la b ase de datos, lo que puede poner en rie sg o la con si st en ci a de la informaci ó n . | Siesa |
-| 12 | La plataforma de integraci ó n WSO2 permitir á a Studio F simplificar y estandarizar esta integraci ó n medi an te l as si guientes capa ci d ad es : | WSO2, Studio F |
+| 1 | Gestionar todas las APIs de manera Centralizada ................................ | API |
+| 2 | Objetivo del Documento Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arquitectura, donde las soluciones WSO2 API Platform y WSO2 Integration Platform pueden ayudar a modernizar su ecosistema, además de proporcionar beneficios de gobernanza y gestión para las API e integracione... | WSO2, Studio F, API |
+| 3 | Contexto de Negócio Studio F cuenta con una arquitectura fragmentada y un ecosistema de sistemas y aplicaciones desactualizados, compuestos por más de 150 aplicaciones .NET y 200 bases de datos con informaciones duplicadas e inconsistentes. | .NET, Studio F |
+| 4 | Actualmente, el ecosistema depende de integraciones "punto a punto" y procesos batch (archivos planos) hacia su ERP Siesa. | Siesa |
+| 5 | Para revertir esta situación, Studio F busca centralizar y estandarizar sus integraciones bajo un modelo de gobernanza clara, con el fin de eliminar la duplicidad de funciones y mejorar la eficiencia operativa, reduciendo significativamente el Time - to - Market y la carga operativa manual. | Studio F |
+| 6 | ○ ERP Siesa - las integraciones con su ERP sónrígidas, mediante archivos planos y un único WebServices para todas las operaciones. | Siesa |
+| 7 | ● Falta de Gobernanza y Control ○ Varias aplicaciones .NET desarrolladas de forma desordenada para resolver problemas puntuales y muchas de ellas con funciones duplicadas . | .NET |
+| 8 | Arquitectura Actual Hoy, el escenario de Studio F puede ser representado de acuerdo con los diagramas abajo: | Studio F |
+| 9 | # Origen Destino Protocolo Descripción 1 Devoluciones Automáticas VTEX JSON/HTTP Consulta Devoluciones y Crea GiftCards 2 Devoluciones Automáticas Siesa Unoee XML/SOAP Crea Notas de Crédito 3 Gestor de Pedidos Siesa Unoee XML/SOAP Crea RQI 4 Auto Registro Siesa Unoee XML/SOAP Fideliza Cliente 5 Generic Transfer WMS Sie... | Credi10, Siesa, UnoEE, UNOEE, VTEX, Pentaho, Numrot, Ecommerce, SMS, Email |
+| 10 | Para el API Manager, se ha seleccionado el Patrón 1 (Pattern 1: | API |
+| 11 | All - in - One High Availability), el cual consta de dos nodos idénticos que integran todos los componentes del API Manager: | API |
+| 12 | API Gateway y Control Plane (API Publisher, Developer Portal, Traffic Manager y Key Manager). | Portal, API |
 

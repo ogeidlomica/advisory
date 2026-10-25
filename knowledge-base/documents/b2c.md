@@ -6,34 +6,40 @@
 | tipo | pdf |
 | rol (prioridad) | secondary |
 | tamano (bytes) | 2256650 |
-| longitud raw | 3879867 |
-| longitud limpia | 2130043 |
-| ratio de cobertura (crudo, legado) | 0.94390 |
-| caracteres de texto util | 54407 |
-| texto util real (palabras / bytes extraidos) | 2.55% |
-| banda de cobertura (por texto util real) | nula |
-| flag epistemico | [EPISTEMIC-VOID] |
-| metodo de ingesta | OCR pendiente (motor no disponible en este entorno) |
+| longitud raw | 17919 |
+| longitud limpia | 14001 |
+| ratio de cobertura (crudo, legado) | 0.00620 |
+| caracteres de texto util | 7644 |
+| texto util real (palabras / bytes extraidos) | 54.60% |
+| banda de cobertura (por texto util real) | alta |
+| flag epistemico | [VERIFIED-FACT] |
+| metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `cde25f1342dbc9b86dd5b45e54e5930701aeffeee32eb40fc03694710abc0c2f` |
 
 ## Resumen jerarquico
 
-- Documento 'B2C.pdf' (PDF): ingerido; la capa de texto es ruido/fragmentos (texto util real 2.55% de lo extraido), sin contenido explotable. PDF basado en imagen, marcado [EPISTEMIC-VOID], OCR pendiente. No se fabrica contenido.
+- Documento 'B2C.pdf' (PDF): 14001 caracteres limpios extraidos (zlib+regex), texto util real 54.60%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 011 - APIs Portal clientes B2C STF GROUP S.A. INFORMATICA –...
+- Seccion 2: Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de de...
+- Seccion 3: web API “ Creditos.Web.Servicios ” donde se establece el funcionamiento de los requerimientos correspondientes a Link de recaudo, botón ecommerce e integración...
+- Seccion 4: en toda la aplicación. Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 Rotativa Herramienta de línea de comandos para representar HTML en PDF, encargado de...
+- Seccion 5: ón del cliente existente en la base de datos con atributos específicos . Para esto se necesita recibir un objeto JSON en el cuerpo de la solicitud POST como el...
+- Seccion 6: 0! $bwgwc; $;>1*& !&<Mg¨¶¿¿¯- ;Wf6// +5K95 %,;D' ' %20<="# %.AX:C> $%#92 $bzhzd< 1@@_N_[E2*# $Og_oD+# #<DCLC0! $bwgwc; $;>1*& !&<Mg¨¶¿¿¯- ;Wf6// +5K95 %,;D...
 
 ## Hechos clave (trazables)
 
 | # | Hecho | Tokens |
 | --- | --- | --- |
-| 1 | 08 / 06 /2021 es-AR FOR MA TO DE DESARRO LL O E INTEGRACIONES FT - SL - 011 - APIs P ort al cl i en t es B 2C STF GROUP S . | API |
-| 2 | 1 R eq ue ri mi en to es-CL es-CL Di spo ne r API pa ra sumin i st r ar di f ere nte i nfor m aci ón al po rt al de cl i en t es cr ed i 10 ( B 2C ) . | API |
-| 3 | Web.Se r vi ci os f un ci on amie nto de l os r eq ue rimi en t os cor r es po nd i en t es a Li nk de r eca ud o , bo t ón eco mmer ce e in t eg r aci ó n B2C . | B2C |
-| 4 | Web.Se r vi ci os API Chec k ou tCon tr ol l er Cr ed it os .Web. | API |
-| 5 | 08 / 06 /2021 P aramet ri zac i on es De sc r ip ción Grup o Valor Li nk conexi ón con su mo API pagos Li nk htt ps : | API |
-| 6 | Al r ea li zar cua l qu i er sol i ci t ud a la API de B 2C C on tr ol l er en tr ará al m étodo as í ncrono ll amado b2 c, qu e procesa r á t od as l as sol i ci t ud es y, de p en di en do de la op er aci ón re ci bi da en el cue r po de la pe ti ci ón , ha cer un a uotra tar ea . | API |
-| 7 | $+zBr,^S3 D¦~'4! +/*UP/\Q*D3 !"9<-ZR0]T.TC",* 6 7?=­0M,+yAk SG%6+%WdEµ5pS-qnD·*5'+y?zW! '5Al+eg@­2U3 af6bH "@H6?6oO " !1?6?>4eI!$ 4<4}?<c! "19@MMX¨¶s`& 222 -3?¡¶ÂÀÀÀÀ¾«X$# %WdC§'0 '^{ÀÀÀÁ¿»hW% *** #CL6x`$* %%%OOO &&&UUU ###LLL 9CN\UM ER]ggdRD6HOR0+ %! :F]`S7 *8AjlrnmlcVF +8^aX- 6?Rmrrmli... | S3 |
-| 8 | JJJ''' !! &% '% &% " ! &% '% %# #KU=*?& ##' ^d>@.Q4 *40\|w>?8rH $44=}X$84'D>#/% %OX: ?6pN "!*jm@5tZ9 =h':35/E0 %Ob=f "+,kn> ?q'1 "'Zc< @ 9xX"$ 161{?=r'3$ 0Ivn±bºw¨Àctm&# %Jpq¤Àw¦¾]pk :eq¥Âx¨Ái'# $2FX¸w§Ás§:7- ?_q}S3. | S3 |
-| 9 | *^_7wj7wj7wj4cJ 5:1iZ&5$ 031nb'3! #?G2qg7wj3dN"% $ -5Jn}¿ÅÃtR 333 &&&TTT 0:HmzhV*! 7:>±1M& 4?[`O? .Bt½¸©XF/ &&& &&&UUU +V¬¹·dU= %%%RRR !!!>>> %Gg¶¼¬]J* '''SSS !!! -K¢µÀ²¬¤fS3 """EEE $$$MMM +6EfnmI8* $$$ &&&UUU """??? $$$QQQ '''SSS $$$ &&& %%%SSS 666 $$$LLL 222 &&&TTT %%%UUU &Me§Ódgc! # &&&UUU """AAA &Oh®Ühnj%... | S3 |
-| 10 | 999@@@ !!!@@@ &&&UUU -& $DP\jaL$# 7IUjaS3+$ "7z¹xK! $$$&&& %%%UUU %%%SSS 999### " %%%UUU 333 !!!QQQ''' 888>>> ... | S3 |
-| 11 | -pÌüÇÜ}ÌüÍËK% -rÎþ¿²6 %195 h¨ÌÜÙÀL +w¯ÑÜÙÅY 8\|²ÑÜÒ·H" `¤ËÜÜÉ Y E¹ÔÜÉ Y `¤ËÜÙÃW" E¹ÔÜÉ Y `¤ËÜÒ¶@ `¤ËÜÒ¶@ WÅÙÜÒ·H" ]¡ÉÛÓ¸C .q¬ÎÜÒ¶@ 8\|²ÑÜÙÇ£j0 `¤ËÜÒ¶@ ]¡ÉÛÛÊ¦i+ #WÀ×ÜÏ¯w5 E¹ÔÜÒ¶@ `¤ËÜÒ¶@ B[nooooooooooooooooooo\C 1OenoooooooooooooooooofP2 O´Øþ¨}% ^¿Ùþ­' 9äÜådD! D¡ìÜäb= O¯öØÞ]@! O´Øþ² R±÷... | S3 |
-| 12 | \«´´´´´´´´´´´´´´´´´´´t6 @s¯´´´±ªzbH0! !M«}Ôþ·¤4" d¼TÅ=J, %N/Z5^7l®IÔV¸6;# &#4K+aµQÁD~¿Hr6j±MÖOvw# " <N­ñØçg("V½Ûü®* ..H[8W¡wÏþ¶©8N[8N[8MP*% &5EMNNt¥ÇÚÜÁ\NNNNNNNH:* }²ÖÜÜ×ÔÉ½¨¢¸ËØÜÛÇ¢`' XÅÙÜ½3 =¹ÖÜÛÏ¾¨²ÈÖÛÛÃQ$ 6·ÕÜÛÓÇ·¦iA" -=LNNN·×ÜÏ±UNNNNNNNB1! Kp¢²ÃÐÙÜÛÃQ$ L¾×ÜÛÓÃ­... | S3 |
+| 1 | 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 011 - APIs Portal clientes B2C STF GROUP S.A. | Portal, B2C, API |
+| 2 | CREDI10 SOFTWARE PROPIO Cali , jueves 19 de febrero del 2024 Código:FT - DG - 00 2 Versión:001 Fecha: | Credi10 |
+| 3 | 1.1.1 Requerimiento Disponer API para suministrar diferente información al portal de clientes credi10 (B2C) . | Credi10, Portal, B2C, API |
+| 4 | 1.2 Detallar componentes existentes Para el desarrollo de los requerimientos se cuenta con 1 solución desarrollada en .NET Framework 4.8 llamada “Créditos”. | .NET |
+| 5 | Se realiza creación del proyecto web API “ Creditos.Web.Servicios ” donde se establece el funcionamiento de los requerimientos correspondientes a Link de recaudo, botón ecommerce e integración B2C. | Recaudo, Ecommerce, Link de Recaudo, B2C, API |
+| 6 | Nombre del Componente Descripción SOLUCION C reditos.Web.Servicios API CheckoutController Creditos.Web.Admin Controladores y vistas implementadas para cumplir con el propósito de informar el valor del pago y recibir el valor que quieran aplicar. | API |
+| 7 | Creditos.DAL Proyecto encargado de tener el acceso y la interaccióna la base de datos C10_Credi10NET de la solución. | Credi10, C10_Credi10NET |
+| 8 | BASE DE DATOS C10_Credi10NET Tablas y Procedimientos almacenados 1.3 Detallar funcionalidades 1.3.1 Diagrama de Componentes 1.3.2 MER Código:FT - DG - 00 2 Versión:001 Fecha: | Credi10, C10_Credi10NET |
+| 9 | 08/06/2021 Parametrizaciones Descripción Grupo Valor Link conexión consumo API pagos Link https://apicredinet.studiof.c om.co:32448/payment/pay mentLink Código:FT - DG - 00 2 Versión:001 Fecha: | API |
+| 10 | 08/06/2021 1.3.3 Proceso Se implementa el componente B2CController encargado de recibir 4 tipos de peticiones diferenciadas por el atributo “operación”. | B2C |
+| 11 | Donde el contenido del atributo “datos” corresponde a una encriptación del siguiente objeto Al realizar cualquier solicitud a la API de B2CController entrará al método asíncrono llamado b2c, que procesará todas las solicitudes y, dependiendo de la operación recibida en el cuerpo de la petición, hacer una u otra tarea. | B2C, API |
+| 12 | 08/06/2021 El objeto json recibido en la petición se desencripta con claves específicas y se inicia con el proceso validación del usuario y password suministrados en el objeto, si no son correctas las credenciales el sistema retornará “No Autorizado”, en caso de ser correctas, se obtendrá la información necesaria para... | API |
 

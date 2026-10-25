@@ -1919,28 +1919,43 @@ class TestUsefulTextMetric(unittest.TestCase):
         self.assertEqual(useful_text_band(prose_ratio, prose_useful), "alta")
         self.assertEqual(useful_text_band(garbage_ratio, garbage_useful), "nula")
 
-    def test_known_image_only_pdfs_not_banded_alta(self):
+    def test_formerly_void_pdfs_recovered_to_native_text(self):
+        """FEAT-002: the PDFs once flagged [EPISTEMIC-VOID] are NOT image-only.
+
+        The verified root cause is that these PDFs carry a real native text
+        layer behind custom-encoded embedded fonts (``/ToUnicode`` CMaps). With
+        the font-aware extractor their text is recovered as genuine native text,
+        so they legitimately cross the useful-text threshold and become
+        ``[VERIFIED-FACT]``. Nothing is fabricated: this is native-text recovery,
+        not OCR. (Supersedes the earlier assumption that they were image/scan
+        PDFs that could never be banded 'alta'.)
+        """
         from engine.corpus import CorpusLoader
-        from engine.knowledge import KnowledgeBase, EPISTEMIC_VOID
+        from engine.knowledge import (
+            KnowledgeBase, VERIFIED_FACT, MIN_USEFUL_RATIO_FOR_TEXT)
         kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
-        # No PDF may be banded 'alta' (they are all image/scan PDFs).
-        for d in kb.documents:
-            if d.kind == "pdf":
-                self.assertNotEqual(
-                    d.coverage_band, "alta",
-                    f"{d.filename}: un PDF de imagen no debe quedar 'alta'")
-        # The worst image/scan PDFs must be 'nula' + [EPISTEMIC-VOID].
-        expected_void = [
+        formerly_void = [
             "WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
             "Api Integrador Atencion al cliente.pdf",
             "Originacion_API_Inspektor.pdf",
             "ProcesoCorteCartera.pdf",
+            "B2C.pdf",
         ]
-        for name in expected_void:
+        for name in formerly_void:
             doc = kb.by_filename(name)
             self.assertIsNotNone(doc, f"{name} debe existir en el corpus")
-            self.assertEqual(doc.coverage_band, "nula", name)
-            self.assertEqual(doc.epistemic_flag, EPISTEMIC_VOID, name)
+            self.assertGreaterEqual(
+                doc.useful_ratio, MIN_USEFUL_RATIO_FOR_TEXT,
+                f"{name}: texto nativo recuperado debe superar el umbral util")
+            self.assertEqual(
+                doc.epistemic_flag, VERIFIED_FACT,
+                f"{name}: texto nativo recuperado debe ser [VERIFIED-FACT]")
+            # The recovered text must contain real Spanish words, not noise.
+            self.assertTrue(
+                any(tok in doc.extracted_text.lower()
+                    for tok in ("arquitectura", "aplicaci", "integraci",
+                                "tecnico", "componentes", "detalle")),
+                f"{name}: el texto recuperado debe ser espanol legible")
 
 
 class TestRequirementsTraceabilityAnnex(unittest.TestCase):
@@ -2031,6 +2046,178 @@ class TestRequirementsTraceabilityAnnex(unittest.TestCase):
                       readme)
         self.assertTrue(
             any(sym in readme for sym in ("- [x]", "- [~]", "- [ ]")))
+
+
+class TestFontAwareExtraction(unittest.TestCase):
+    """Per-font ToUnicode-aware PDF extractor (FEAT-002).
+
+    Verifies that the custom-encoded embedded fonts in the formerly-'nula' PDFs
+    are decoded into legible Spanish, that the useful-text % rises strictly over
+    the recorded FEAT-001 baseline, that the CMap parser maps codes correctly,
+    and that extraction degrades gracefully when a font has no /ToUnicode.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import enrich_corpus
+        cls.loader = CorpusLoader(_REPO_ROOT)
+        cls.enriched = enrich_corpus(cls.loader.load())
+
+    def _doc(self, needle):
+        for d in self.enriched:
+            if needle.lower() in d.filename.lower():
+                return d
+        return None
+
+    def test_wso2_recovers_spanish_words(self):
+        """The WSO2 assessment now yields legible Spanish, not font noise."""
+        wso2 = self._doc("WSO2 y Studio F")
+        self.assertIsNotNone(wso2, "debe descubrirse el PDF WSO2")
+        low = wso2.extracted_text.lower()
+        self.assertTrue(
+            any(tok in low for tok in ("aplicaci", "arquitectura", "integraci")),
+            "el texto recuperado de WSO2 debe contener espanol legible "
+            "(aplicaci/arquitectura/integraci), ausente con el extractor viejo",
+        )
+
+    def test_second_nula_doc_recovers_spanish(self):
+        """At least one other formerly-'nula' PDF also recovers Spanish."""
+        found = False
+        for needle in ("ProcesoCorteCartera", "B2C", "Originacion_API_Inspektor",
+                       "Api Integrador"):
+            d = self._doc(needle)
+            if d is None:
+                continue
+            low = d.extracted_text.lower()
+            if any(tok in low for tok in (
+                    "detalle", "tecnico", "componentes", "arquitectura",
+                    "funcionalidad", "proceso")):
+                found = True
+                break
+        self.assertTrue(
+            found, "al menos otro PDF antes 'nula' debe recuperar espanol real")
+
+    def test_useful_text_strictly_above_baseline(self):
+        """WSO2 and ProcesoCorteCartera useful-text % beats the FEAT-001 baseline."""
+        from engine.knowledge import USEFUL_TEXT_BASELINE_PCT
+        for fname in ("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+                      "ProcesoCorteCartera.pdf"):
+            d = self._doc(fname.split(" - ")[0] if " - " in fname else fname)
+            self.assertIsNotNone(d, f"debe descubrirse {fname}")
+            before = USEFUL_TEXT_BASELINE_PCT[fname]
+            now = d.useful_ratio * 100.0
+            self.assertGreater(
+                now, before,
+                f"{fname}: texto util ahora ({now:.2f}%) debe superar "
+                f"estrictamente la linea base ({before:.2f}%)")
+
+    def test_formerly_nula_now_verified_fact(self):
+        """The 5 formerly-'nula' PDFs cross the threshold -> [VERIFIED-FACT]."""
+        from engine.knowledge import (
+            BASELINE_NULA_PDFS, MIN_USEFUL_RATIO_FOR_TEXT, VERIFIED_FACT)
+        for fname in BASELINE_NULA_PDFS:
+            d = self._doc(fname.split(" - ")[0] if " - " in fname else fname)
+            self.assertIsNotNone(d, f"debe descubrirse {fname}")
+            self.assertGreaterEqual(d.useful_ratio, MIN_USEFUL_RATIO_FOR_TEXT,
+                                    f"{fname} debe superar el umbral de texto util")
+            self.assertEqual(d.epistemic_flag, VERIFIED_FACT,
+                             f"{fname} debe ser texto nativo [VERIFIED-FACT]")
+
+    def test_cmap_parser_bfchar_and_bfrange(self):
+        """A tiny CMap block maps codes to unicode correctly (both forms)."""
+        from engine.pdf_text import parse_tounicode_cmap
+        cmap = (
+            b"1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n"
+            b"2 beginbfchar\n<0044> <0061>\n<0069> <00E1>\nendbfchar\n"
+            b"1 beginbfrange\n<0046> <0049> <0063>\nendbfrange\n"
+            b"1 beginbfrange\n<00B2> <00B2> [<2014>]\nendbfrange\n"
+        )
+        m = parse_tounicode_cmap(cmap)
+        self.assertEqual(m.code_bytes, 2, "codespacerange <0000><FFFF> => 2 bytes")
+        # bfchar pairs
+        self.assertEqual(m.mapping[0x0044], "a")   # <0044> -> U+0061
+        self.assertEqual(m.mapping[0x0069], "\u00E1")  # -> 'á'
+        # bfrange triple: 0x46->0x63('c'), 0x47->'d', 0x48->'e', 0x49->'f'
+        self.assertEqual(m.mapping[0x0046], "c")
+        self.assertEqual(m.mapping[0x0047], "d")
+        self.assertEqual(m.mapping[0x0049], "f")
+        # bfrange array form
+        self.assertEqual(m.mapping[0x00B2], "\u2014")  # em dash
+
+    def test_two_byte_code_decoding(self):
+        """2-byte codes are grouped and mapped through the font table."""
+        from engine.pdf_text import (
+            parse_tounicode_cmap, FontInfo, _decode_codes)
+        cmap = (
+            b"1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n"
+            b"2 beginbfchar\n<0003> <0041>\n<0004> <0042>\nendbfchar\n"
+        )
+        font = FontInfo(parse_tounicode_cmap(cmap), None)
+        # bytes 00 03 00 04 -> codes 0x0003, 0x0004 -> 'A','B'
+        self.assertEqual(_decode_codes(b"\x00\x03\x00\x04", font), "AB")
+        # Unknown 2-byte code is skipped, not emitted as noise.
+        self.assertEqual(_decode_codes(b"\x00\xFF", font), "")
+
+    def test_tolerant_no_tounicode(self):
+        """A font/stream without /ToUnicode never crashes extraction."""
+        from engine.pdf_text import (
+            extract_pdf_text_font_aware, FontInfo, _decode_codes)
+        # No mapping at all -> latin-1 clear-char fallback (no crash).
+        self.assertEqual(_decode_codes(b"Hola", None), "Hola")
+        self.assertEqual(_decode_codes(b"Hola", FontInfo(None, None)), "Hola")
+        # A minimal PDF-ish blob with a font lacking /ToUnicode must not raise
+        # and must return a (possibly empty) string.
+        blob = (
+            b"%PDF-1.4\n"
+            b"1 0 obj<</Type/Page/Resources<</Font<</F1 2 0 R>>>>>>endobj\n"
+            b"2 0 obj<</Type/Font/Subtype/TrueType/Encoding/WinAnsiEncoding>>"
+            b"endobj\n"
+        )
+        out = extract_pdf_text_font_aware(blob)
+        self.assertIsInstance(out, str)
+
+    def test_tj_array_word_spacing(self):
+        """Large negative kerning in a TJ array separates words."""
+        from engine.pdf_text import _decode_tj_array
+        token = b"[(Hola)-400(mundo)] TJ"
+        out = _decode_tj_array(token, None)
+        self.assertIn("Hola", out)
+        self.assertIn("mundo", out)
+        self.assertIn(" ", out, "un kerning negativo grande debe insertar espacio")
+
+
+class TestBeforeAfterComparison(unittest.TestCase):
+    """The regenerated coverage checklist carries the before/after comparison."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, text=True,
+            timeout=600,
+        )
+        cls.checklist = os.path.join(_REPO_ROOT, "knowledge-base",
+                                     "coverage-checklist.md")
+
+    def test_comparison_section_present(self):
+        with open(self.checklist, encoding="utf-8") as fh:
+            text = fh.read()
+        self.assertIn("Comparacion antes/despues", text)
+        self.assertIn("Texto util antes", text)
+        self.assertIn("Texto util ahora", text)
+        self.assertIn("pp", text, "debe haber una columna de delta en pp")
+        # Honest prose on recovery and limits.
+        self.assertIn("recuperados del vacio epistemico", text)
+        self.assertIn("DCTDecode", text)
+
+    def test_comparison_shows_wso2_rise(self):
+        with open(self.checklist, encoding="utf-8") as fh:
+            text = fh.read()
+        self.assertIn("WSO2 y Studio F - Assessment Mayo2026-Final.pdf", text)
+        self.assertIn("1.60%", text, "la linea base de WSO2 debe aparecer")
 
 
 if __name__ == "__main__":
