@@ -55,6 +55,14 @@ El informe se compone de **7 fases** y **22 archivos de tema** en total. Indice 
 | Fase 5 - Roadmap, Estimacion y RAID | [`fase-5-roadmap-estimacion-raid/`](fase-5-roadmap-estimacion-raid/README.md) | [Estimacion por modulo y modelo parametrico](fase-5-roadmap-estimacion-raid/estimacion-por-modulo.md), [Roadmap por olas, WSJF y ruta critica](fase-5-roadmap-estimacion-raid/roadmap-olas.md), [Matriz RAID (supuestos, restricciones, dependencias, prerrequisitos)](fase-5-roadmap-estimacion-raid/raid.md), [Evaluacion de suficiencia y riesgo de desfase](fase-5-roadmap-estimacion-raid/riesgo-de-desfase.md) | [plano](../../05-roadmap-estimacion-raid.md) |
 | Fase 6 - Caso de Negocio | [`fase-6-caso-de-negocio/`](fase-6-caso-de-negocio/README.md) | [Value driver tree y outcomes de negocio](fase-6-caso-de-negocio/value-driver-tree.md), [Modelo financiero y defensa ejecutiva](fase-6-caso-de-negocio/modelo-financiero.md) | [plano](../../06-caso-de-negocio.md) |
 
+## Anexo A - Trazabilidad de requisitos
+
+El **Anexo A** responde **punto a punto** cada solicitud del cliente presente en el corpus, con **cita al documento fuente**, el lugar del advisory donde se responde (fase/seccion/entregable), un estado **Cubierto/Parcial/Pendiente** y una nota de evidencia. Incluye un **checklist marcable** de que desarrollar y una **tabla de trazabilidad** detallada. Es **dinamico y derivado del corpus**: las solicitudes se extraen automaticamente de la documentacion (no estan hardcodeadas), de modo que con el corpus de otro cliente el anexo se regenera con sus solicitudes. Gobernado por el skill `requirements-traceability`.
+
+| Anexo | Contenido | Donde |
+| --- | --- | --- |
+| Anexo A - Trazabilidad de requisitos | Checklist marcable + tabla punto a punto (dinamica, derivada del corpus) | [`anexo-a-trazabilidad-requisitos/README.md`](anexo-a-trazabilidad-requisitos/README.md) |
+
 ## Hilo Dorado (trazabilidad F1 -> F6)
 
 La trazabilidad end-to-end conecta cada decision tecnica con un indicador del RFP:

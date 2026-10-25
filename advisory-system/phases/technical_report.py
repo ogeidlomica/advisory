@@ -50,6 +50,7 @@ from phases import phase5
 from phases import phase6
 from phases import modules as modules_mod
 from phases.modules import MODULES
+from phases import requirements_traceability
 
 
 # --------------------------------------------------------------------------- #
@@ -1939,6 +1940,26 @@ def build_master_readme(knowledge_base=None) -> str:
         )
     parts += [
         "",
+        "## Anexo A - Trazabilidad de requisitos",
+        "",
+        "El **Anexo A** responde **punto a punto** cada solicitud del cliente "
+        "presente en el corpus, con **cita al documento fuente**, el lugar del "
+        "advisory donde se responde (fase/seccion/entregable), un estado "
+        "**Cubierto/Parcial/Pendiente** y una nota de evidencia. Incluye un "
+        "**checklist marcable** de que desarrollar y una **tabla de "
+        "trazabilidad** detallada. Es **dinamico y derivado del corpus**: las "
+        "solicitudes se extraen automaticamente de la documentacion (no estan "
+        "hardcodeadas), de modo que con el corpus de otro cliente el anexo se "
+        "regenera con sus solicitudes. Gobernado por el skill "
+        "`requirements-traceability`.",
+        "",
+        "| Anexo | Contenido | Donde |",
+        "| --- | --- | --- |",
+        "| Anexo A - Trazabilidad de requisitos | Checklist marcable + tabla "
+        "punto a punto (dinamica, derivada del corpus) | "
+        "[`anexo-a-trazabilidad-requisitos/README.md`]"
+        "(anexo-a-trazabilidad-requisitos/README.md) |",
+        "",
         "## Hilo Dorado (trazabilidad F1 -> F6)",
         "",
         "La trazabilidad end-to-end conecta cada decision tecnica con un "
@@ -2047,5 +2068,10 @@ def write(out_root: str, knowledge_base=None, roles=None, documents=None,
                _phase_readme(slug, title, backing, themes))
         for theme in themes:
             _write(os.path.join(slug, f"{theme.slug}.md"), theme.builder(ctx))
+
+    # Anexo A - Trazabilidad de requisitos (dinamico, derivado del corpus).
+    annex_paths = requirements_traceability.write(
+        base, knowledge_base=knowledge_base, documents=documents)
+    written.extend(annex_paths)
 
     return sorted(written)
