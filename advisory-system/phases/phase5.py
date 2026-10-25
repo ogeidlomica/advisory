@@ -748,7 +748,24 @@ def _high_uncertainty_note(ctx) -> str:
         band, flag = _coverage_for_module(ctx, mod)
         if flag == "[EPISTEMIC-VOID]" or band in ("nula", "baja", "desconocida"):
             high.append(mod.id)
-    listed = ", ".join(high) if high else "ninguno"
+    if not high:
+        # Todos los documentos fuente de los modulos ahora tienen texto util
+        # nativo recuperado (banda 'alta', [VERIFIED-FACT]). No hay modulos en
+        # vacio epistemico por falta de capa de texto. Se mantiene la nota
+        # honesta: la incertidumbre residual ya NO es de evidencia ausente sino
+        # de calibracion de esfuerzo (sin conteo funcional historico).
+        return (
+            "> **Modulos de mayor incertidumbre por falta de texto fuente: "
+            "ninguno.** Tras la recuperacion de la capa de texto nativa (per-"
+            "font /ToUnicode + reconstruccion lexica), **todos** los documentos "
+            "fuente de los modulos quedan en banda 'alta' con [VERIFIED-FACT]: "
+            "ya no hay modulos cuyo soporte sea 'solo imagen'/[EPISTEMIC-VOID]. "
+            "La incertidumbre residual de estimacion NO proviene de evidencia "
+            "ausente sino de la **calibracion del esfuerzo** (sin conteo "
+            "funcional historico): el SP ajustado debe confirmarse con un taller "
+            "de estimacion / spike en sprint 0, no por un vacio documental."
+        )
+    listed = ", ".join(high)
     return (
         f"> **Modulos de mayor incertidumbre [EPISTEMIC-VOID].** Los modulos "
         f"cuyo documento fuente tiene cobertura textual baja/nula o esta marcado "
@@ -759,7 +776,33 @@ def _high_uncertainty_note(ctx) -> str:
     )
 
 
-def _schedule_risk_table() -> str:
+def _schedule_risk_table(ctx=None) -> str:
+    # RS-03 se ata dinamicamente a la cobertura real del knowledge base. Tras
+    # recuperar la capa de texto nativa, si ya no quedan modulos cuyo documento
+    # fuente este en vacio epistemico, el riesgo cambia de naturaleza: ya no es
+    # "evidencia solo en imagen" sino "specs recuperadas aun sin validar con el
+    # cliente". Se mantiene honesto, sin fabricar.
+    high = []
+    if ctx is not None:
+        for mod in MODULES:
+            band, flag = _coverage_for_module(ctx, mod)
+            if flag == "[EPISTEMIC-VOID]" or band in ("nula", "baja",
+                                                      "desconocida"):
+                high.append(mod.id)
+    if high:
+        rs03 = (
+            "| RS-03 | Modulos con evidencia solo en imagen [EPISTEMIC-VOID] "
+            "(cobertura baja/nula) subestimados | Media | Alto | Alta | Spikes "
+            "de descubrimiento por modulo; resolver deltas del knowledge base |"
+        )
+    else:
+        rs03 = (
+            "| RS-03 | Specs de modulo recuperadas del texto nativo "
+            "([VERIFIED-FACT]) aun sin ratificar 1:1 con el cliente | Media | "
+            "Medio | Media | Validar la evidencia recuperada (originacion, "
+            "pagos, cartera, integracion WSO2) en taller de descubrimiento; ya "
+            "no hay modulos en [EPISTEMIC-VOID] por falta de capa de texto |"
+        )
     rows = [
         "| ID | Riesgo de desfase (schedule-slip) | Probabilidad | Impacto | "
         "Exposicion | Mitigacion |",
@@ -770,9 +813,7 @@ def _schedule_risk_table() -> str:
         "| RS-02 | Desacople de Siesa/UnoEE (MOD-16) mas complejo de lo asumido "
         "(enabler de la ruta critica) | Alta | Alto | Alta | PoC de Data "
         "Services + eventos antes de WAV-001; contrato de integracion versionado |",
-        "| RS-03 | Modulos con evidencia solo en imagen [EPISTEMIC-VOID] "
-        "(cobertura baja/nula) subestimados | Media | Alto | Alta | Spikes de "
-        "descubrimiento por modulo; resolver deltas del knowledge base |",
+        rs03,
         "| RS-04 | Contratos de terceros (PayU, buros, WOLKVOX, VTEX) cambian "
         "durante la transicion | Media | Medio | Media | Catalogo de contratos "
         "(P-03) y pruebas de contrato automatizadas |",
@@ -990,7 +1031,7 @@ def build(ctx) -> str:
         "",
         "### Matriz de riesgo de desfase (probabilidad / impacto)",
         "",
-        _schedule_risk_table(),
+        _schedule_risk_table(ctx),
         "",
         _go_nogo_verdict(),
         "",

@@ -41,6 +41,8 @@ from phases import dossier as dossier_mod
 from phases import modules as modules_mod
 from phases import phase1
 from phases import phase3
+from phases import evidence_delta
+from engine import knowledge as kb_mod
 
 
 # --------------------------------------------------------------------------- #
@@ -267,7 +269,33 @@ def _indicadores_table() -> str:
     return "\n".join(rows)
 
 
-def _sec_diagnostico() -> List[str]:
+def _recovered_evidence_note(knowledge_base) -> str:
+    """Nota gerencial honesta sobre la evidencia recuperada (dinamica)."""
+    recovered = evidence_delta._recovered_now(knowledge_base)
+    n_rec = len(recovered)
+    n_base = len(kb_mod.BASELINE_NULA_PDFS)
+    if n_rec == 0:
+        return (
+            "> **Base de evidencia.** Los hallazgos se sustentan en la "
+            "documentacion disponible del corpus, con marca epistemica honesta "
+            "donde la evidencia es insuficiente."
+        )
+    facts_recovered = evidence_delta._facts_from_recovered(knowledge_base)
+    return (
+        f"> **Base de evidencia reforzada.** {n_rec} de {n_base} documentos "
+        "clave que antes eran **vacios epistemicos** (entre ellos el "
+        "**Assessment WSO2/Studio F** y las especificaciones de "
+        "**originacion**, **cartera**, **pagos** e **integracion de atencion "
+        "al cliente**) fueron **recuperados como texto verificado** "
+        "([VERIFIED-FACT]) y hoy aportan evidencia trazable "
+        f"(**{facts_recovered}** hechos clave). En consecuencia, estos "
+        "hallazgos ya **no descansan en supuestos**. El detalle del cambio y "
+        "su lectura de suficiencia estan en el informe tecnico (Anexo C - 'En "
+        "que cambio')."
+    )
+
+
+def _sec_diagnostico(knowledge_base=None) -> List[str]:
     return [
         "## 4. Diagnostico de alto nivel",
         "",
@@ -299,6 +327,8 @@ def _sec_diagnostico() -> List[str]:
         "resta confianza a la informacion; y la **obsolescencia de .NET "
         "Framework 4.8 / .NET Core 3.1** compromete soporte, seguridad y "
         "licenciamiento.",
+        "",
+        _recovered_evidence_note(knowledge_base),
         "",
         "### 4.2 Indicadores de retorno del RFP",
         "",
@@ -482,7 +512,7 @@ def build(knowledge_base=None, roles=None, documents=None,
     parts += _sec_resumen_ejecutivo(brand, kb_total)
     parts += _sec_alcance()
     parts += _sec_fases()
-    parts += _sec_diagnostico()
+    parts += _sec_diagnostico(knowledge_base)
     parts += _sec_estrategia()
     parts += _sec_riesgos()
     parts += _sec_consideraciones()

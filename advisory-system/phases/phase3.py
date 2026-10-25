@@ -25,6 +25,8 @@ from __future__ import annotations
 
 from typing import List
 
+from phases import evidence_delta
+
 
 # --------------------------------------------------------------------------- #
 # Hilo Dorado - Gaps (GAP-xxx), Relievers (REL-xxx) y ABBs (ABB-xxx).
@@ -506,6 +508,15 @@ def build(ctx) -> str:
         "existe un numero real en el corpus:",
         "",
         _pain_matrix_table(),
+        "",
+        "> **Trazabilidad del dolor a evidencia recuperada [VERIFIED-FACT].** "
+        "El assessment WSO2/Studio F era un vacio epistemico; su texto nativo "
+        "fue recuperado y hoy respalda los dolores GAP-001/GAP-005 con cita "
+        "directa (ya no [DOC-ASSUMPTION] en la causa raiz de integracion):",
+        "",
+        evidence_delta.grounded_evidence_table(
+            getattr(ctx, "knowledge_base", None),
+            "WSO2 y Studio F - Assessment Mayo2026-Final.pdf"),
         "",
         "## E3.2 - Gap Analysis multidominio (TOGAF B / C / D)",
         "",

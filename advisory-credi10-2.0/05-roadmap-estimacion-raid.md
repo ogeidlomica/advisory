@@ -315,7 +315,7 @@ Analisis explicito del **riesgo de desfase de tiempos**: supuestos fragiles, dep
 | MOD-16 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | alta | [VERIFIED-FACT] | BAJA |
 | MOD-17 | RFP_CREDI10_2_0.pdf | alta | [VERIFIED-FACT] | BAJA |
 
-> **Modulos de mayor incertidumbre [EPISTEMIC-VOID].** Los modulos cuyo documento fuente tiene cobertura textual baja/nula o esta marcado [EPISTEMIC-VOID] son: **ninguno**. Su estimacion es la mas fragil: la evidencia proviene mayormente de diagramas/PDF escaneados sin capa de texto util, por lo que el SP ajustado debe tratarse como una banda amplia y confirmarse con un spike/PoC antes de comprometer su ola.
+> **Modulos de mayor incertidumbre por falta de texto fuente: ninguno.** Tras la recuperacion de la capa de texto nativa (per-font /ToUnicode + reconstruccion lexica), **todos** los documentos fuente de los modulos quedan en banda 'alta' con [VERIFIED-FACT]: ya no hay modulos cuyo soporte sea 'solo imagen'/[EPISTEMIC-VOID]. La incertidumbre residual de estimacion NO proviene de evidencia ausente sino de la **calibracion del esfuerzo** (sin conteo funcional historico): el SP ajustado debe confirmarse con un taller de estimacion / spike en sprint 0, no por un vacio documental.
 
 ### Matriz de riesgo de desfase (probabilidad / impacto)
 
@@ -323,7 +323,7 @@ Analisis explicito del **riesgo de desfase de tiempos**: supuestos fragiles, dep
 | --- | --- | --- | --- | --- | --- |
 | RS-01 | Supuestos de esfuerzo [DOC-ASSUMPTION] mal calibrados (sin conteo funcional historico) | Alta | Alto | Alta | Taller de estimacion + recalibrar tabla parametrica en sprint 0 |
 | RS-02 | Desacople de Siesa/UnoEE (MOD-16) mas complejo de lo asumido (enabler de la ruta critica) | Alta | Alto | Alta | PoC de Data Services + eventos antes de WAV-001; contrato de integracion versionado |
-| RS-03 | Modulos con evidencia solo en imagen [EPISTEMIC-VOID] (cobertura baja/nula) subestimados | Media | Alto | Alta | Spikes de descubrimiento por modulo; resolver deltas del knowledge base |
+| RS-03 | Specs de modulo recuperadas del texto nativo ([VERIFIED-FACT]) aun sin ratificar 1:1 con el cliente | Media | Medio | Media | Validar la evidencia recuperada (originacion, pagos, cartera, integracion WSO2) en taller de descubrimiento; ya no hay modulos en [EPISTEMIC-VOID] por falta de capa de texto |
 | RS-04 | Contratos de terceros (PayU, buros, WOLKVOX, VTEX) cambian durante la transicion | Media | Medio | Media | Catalogo de contratos (P-03) y pruebas de contrato automatizadas |
 | RS-05 | Preservacion de reglas de negocio sin inventario (P-01) | Media | Alto | Alta | Inventario funcional + pruebas de equivalencia 1:1 antes de migrar |
 | RS-06 | Pago a 60 dias / facturacion por entregables tensiona el flujo de caja y el tamanio de ola | Media | Medio | Media | Olas cortas con entregables verificables; evitar big-bang |

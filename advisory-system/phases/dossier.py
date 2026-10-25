@@ -115,21 +115,26 @@ AMBIGUEDADES: List[RegistryEntry] = [
     RegistryEntry(
         "AMB-002", "integracion",
         "Contrato real del Web Service unico de Siesa",
-        "El corpus confirma un UNICO Web Service y archivos planos batch contra "
-        "Siesa/UnoEE (GAP-001), pero no documenta sus operaciones, esquemas ni "
-        "SLAs, por lo que el alcance exacto del desacople no es derivable del "
-        "corpus.",
+        "El Assessment WSO2/Studio F (texto nativo recuperado, [VERIFIED-FACT]) "
+        "confirma un UNICO Web Service y archivos planos batch contra "
+        "Siesa/UnoEE (GAP-001); lo que el documento recuperado NO detalla son "
+        "las operaciones, esquemas y SLAs de ese WS, por lo que el alcance "
+        "exacto del desacople sigue siendo el vacio residual [EPISTEMIC-VOID] a "
+        "cerrar con el cliente.",
         "Alta", "Abierto", "[EPISTEMIC-VOID]",
         "WSO2 y Studio F - Assessment Mayo2026-Final.pdf; Envio_de_RCL_y_RCR.pdf"),
     RegistryEntry(
         "AMB-003", "aplicacion",
-        "Detalle funcional de PDFs solo-imagen",
+        "Reglas finas de los procesos recuperados del texto nativo",
         "Varios documentos de proceso (Captura Foto, Llamada predictiva, Boton "
-        "Ecommerce, entre otros) son PDFs mayormente de imagen sin capa de "
-        "texto explotable; sus reglas finas no son verificables desde el corpus "
-        "y se registran como vacio epistemico, no se fabrican.",
-        "Media", "Abierto", "[EPISTEMIC-VOID]",
-        "Base de Conocimiento (knowledge-base/): documentos de banda baja/nula"),
+        "Ecommerce, entre otros) tenian fuentes de codificacion personalizada; "
+        "su capa de texto nativa fue recuperada y hoy es banda 'alta' "
+        "[VERIFIED-FACT]. La ambiguedad residual ya NO es de legibilidad sino "
+        "de detalle: algunas reglas finas de negocio no quedan explicitas en el "
+        "texto recuperado y deben ratificarse con negocio ([DOC-ASSUMPTION]); "
+        "no se fabrican.",
+        "Media", "Abierto", "[DOC-ASSUMPTION]",
+        "Base de Conocimiento (knowledge-base/): documentos de banda 'alta'"),
     RegistryEntry(
         "AMB-004", "datos",
         "Umbrales de scoring y decision del estudio de credito",
@@ -219,11 +224,13 @@ RIESGOS: List[RegistryEntry] = [
         "WSO2 y Studio F - Assessment Mayo2026-Final.pdf; Fase 3 (GAP-004)"),
     RegistryEntry(
         "RSK-009", "negocio",
-        "Riesgo de desfase por vacios epistemicos del corpus",
-        "Una parte del corpus de proceso es solo-imagen (banda de cobertura "
-        "baja/nula), lo que puede derivar en retrabajo de alcance si no se "
-        "cierran los vacios con el negocio antes de construir.",
-        "Media", "Abierto", "[EPISTEMIC-VOID]",
+        "Riesgo de desfase por specs recuperadas aun sin ratificar",
+        "La capa de texto nativa del corpus de proceso fue recuperada (hoy "
+        "banda 'alta' [VERIFIED-FACT]); el riesgo residual ya NO es de "
+        "legibilidad sino de que las specs recuperadas (originacion, cartera, "
+        "pagos, integracion WSO2) no se ratifiquen 1:1 con el negocio antes de "
+        "construir, lo que puede derivar en retrabajo de alcance.",
+        "Media", "Abierto", "[DOC-ASSUMPTION]",
         "Base de Conocimiento (knowledge-base/coverage-checklist.md)"),
 ]
 
@@ -330,9 +337,11 @@ PRERREQUISITOS: List[RegistryEntry] = [
     RegistryEntry(
         "PRE-001", "integracion",
         "Especificacion del contrato del WS/Data Services de Siesa",
-        "Antes de construir el desacople se requiere la especificacion real de "
-        "las operaciones del ERP Siesa (hoy [EPISTEMIC-VOID]) para definir los "
-        "Data Services (SBB-002).",
+        "El Assessment WSO2/Studio F recuperado ([VERIFIED-FACT]) confirma el "
+        "WS unico y los archivos planos, pero antes de construir el desacople "
+        "se requiere la especificacion real de las operaciones del ERP Siesa "
+        "(detalle hoy [EPISTEMIC-VOID]) para definir los Data Services "
+        "(SBB-002).",
         "Alta", "Pendiente", "[EPISTEMIC-VOID]",
         "AMB-002; WSO2 y Studio F - Assessment Mayo2026-Final.pdf"),
     RegistryEntry(
@@ -1182,8 +1191,9 @@ def _parametric_table() -> str:
         "WS/archivos planos |",
         "| Factor de migracion .NET 8 | +0.3 pm | Por obsolescencia .NET 4.8 / "
         "Core 3.1 |",
-        "| Contingencia por vacio epistemico | +15% | Por PDFs solo-imagen "
-        "[EPISTEMIC-VOID] |",
+        "| Contingencia por vacios no documentales | +15% | Por mediciones "
+        "ausentes (SLA/latencia, costos) y specs recuperadas aun sin ratificar "
+        "1:1 [DOC-ASSUMPTION]; ya no por PDFs solo-imagen |",
     ]
     return "\n".join(rows)
 

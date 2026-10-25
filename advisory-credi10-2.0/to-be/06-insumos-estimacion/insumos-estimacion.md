@@ -49,7 +49,7 @@ Todas las cifras son [DOC-ASSUMPTION] y se recalibran con historicos del equipo;
 | Esfuerzo base por modulo (person-months) | 1.0 pm | Ancla de la tabla; ajustar con historicos |
 | Factor de integracion Siesa | +0.5 pm | Sobrecosto por desacople del WS/archivos planos |
 | Factor de migracion .NET 8 | +0.3 pm | Por obsolescencia .NET 4.8 / Core 3.1 |
-| Contingencia por vacio epistemico | +15% | Por PDFs solo-imagen [EPISTEMIC-VOID] |
+| Contingencia por vacios no documentales | +15% | Por mediciones ausentes (SLA/latencia, costos) y specs recuperadas aun sin ratificar 1:1 [DOC-ASSUMPTION]; ya no por PDFs solo-imagen |
 
 ## Supuestos de estimacion
 

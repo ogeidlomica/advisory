@@ -402,8 +402,9 @@ def _sec_supuestos() -> List[str]:
         "referencia recalibrable | [DOC-ASSUMPTION] |",
         "| Restriccion | La etapa es advisory + specs; **no** incluye "
         "construccion ni despliegue | [VERIFIED-FACT] |",
-        "| Restriccion | Parte del corpus es solo-imagen; sus reglas finas no "
-        "son derivables | [EPISTEMIC-VOID] |",
+        "| Restriccion | El corpus documenta el AS-IS (texto nativo recuperado, "
+        "[VERIFIED-FACT]); algunas reglas finas de negocio deben ratificarse "
+        "con el cliente | [DOC-ASSUMPTION] |",
         "| Restriccion | Se preservan las reglas de negocio vigentes del cliente "
         "| [DOC-ASSUMPTION] |",
         "",

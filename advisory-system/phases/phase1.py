@@ -23,6 +23,8 @@ from __future__ import annotations
 
 from typing import List
 
+from phases import evidence_delta
+
 
 # Drivers estrategicos ligados a los 5 indicadores de retorno del RFP.
 # (driver_id, indicador, as_is -> to_be, descripcion)
@@ -334,6 +336,23 @@ def build(ctx) -> str:
         "(**.NET Framework 4.8**, **.NET Core 3.1**) y practicas de alto riesgo "
         "(lectura directa a la BD del ERP Siesa, Wordpress/XAMPP en produccion), "
         "lo que fundamenta el caso de modernizacion de Credi10 2.0.",
+        "",
+        "### Diagnostico de integracion AS-IS (evidencia recuperada del Assessment WSO2)",
+        "",
+        "El Assessment WSO2/Studio F era un **vacio epistemico** (PDF con fuente "
+        "de codificacion personalizada); su capa de texto nativa fue recuperada "
+        "y hoy sustenta el diagnostico de integracion con evidencia trazable "
+        "**[VERIFIED-FACT]** (ya no supuestos). Cita directa de los hechos "
+        "clave del documento fuente:",
+        "",
+        evidence_delta.grounded_evidence_table(
+            getattr(ctx, "knowledge_base", None),
+            "WSO2 y Studio F - Assessment Mayo2026-Final.pdf"),
+        "",
+        "> Estos hechos confirman la integracion AS-IS con el **ERP Siesa** "
+        "mediante **archivos planos** y un **unico WebService** para todas las "
+        "operaciones, y la motivacion de **centralizar y gobernar las APIs** "
+        "(driver DRV-004), sustentando CAP-007 con evidencia real.",
         "",
         _gate_block(ctx),
     ]

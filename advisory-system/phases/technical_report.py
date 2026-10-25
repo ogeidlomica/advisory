@@ -52,6 +52,7 @@ from phases import modules as modules_mod
 from phases.modules import MODULES
 from phases import requirements_traceability
 from phases import extraction_architecture
+from phases import evidence_delta
 
 
 # --------------------------------------------------------------------------- #
@@ -1965,6 +1966,12 @@ def build_master_readme(knowledge_base=None) -> str:
         "antes/despues del corpus (diagrama Mermaid + tabla por tipo de "
         "documento) | [`anexo-b-arquitectura-extraccion/README.md`]"
         "(anexo-b-arquitectura-extraccion/README.md) |",
+        "| Anexo C - En que cambio (ANTES vs AHORA) | Delta de evidencia de "
+        "consecuencia: los 5 documentos recuperados de [EPISTEMIC-VOID] a "
+        "[VERIFIED-FACT], el balance epistemico del corpus y el veredicto de "
+        "suficiencia (% que aun exige conceptualizacion/especificacion) | "
+        "[`anexo-c-en-que-cambio/README.md`]"
+        "(anexo-c-en-que-cambio/README.md) |",
         "",
         "## Anexo B - Arquitectura IA multicapa de extraccion de texto util",
         "",
@@ -1978,6 +1985,20 @@ def build_master_readme(knowledge_base=None) -> str:
         "explicita lo **implementado aqui (L1)** de lo que requiere el entorno "
         "de produccion (L2-L4). Gobernado por el skill generico "
         "`document-extraction-architecture`.",
+        "",
+        "## Anexo C - En que cambio (ANTES vs AHORA) y suficiencia para definir el proyecto",
+        "",
+        "El **Anexo C** responde la pregunta del negocio: tras recuperar la "
+        "capa de texto nativa, ¿con esta informacion podemos definir el "
+        "proyecto con tranquilidad y, si no, que % exige todavia una etapa de "
+        "conceptualizacion/especificacion? Mide el **delta de consecuencia**: "
+        "los cinco documentos que antes eran [EPISTEMIC-VOID] y hoy son "
+        "[VERIFIED-FACT], el balance epistemico del corpus (vacios-antes -> 0 "
+        "vacios-ahora), cuantos hechos clave trazables aportan hoy frente a los "
+        "~0 de antes, y un veredicto de suficiencia honesto (cobertura de "
+        "evidencia + % que aun exige sprint 0). Las cifras se leen de la Base "
+        "de Conocimiento viva (no hardcodeadas) y se recomputan si el corpus "
+        "cambia. Complementa al Anexo B con la lectura de negocio.",
         "",
         "## Hilo Dorado (trazabilidad F1 -> F6)",
         "",
@@ -2098,5 +2119,12 @@ def write(out_root: str, knowledge_base=None, roles=None, documents=None,
     annex_b_paths = extraction_architecture.write(
         base, knowledge_base=knowledge_base, documents=documents)
     written.extend(annex_b_paths)
+
+    # Anexo C - En que cambio (ANTES vs AHORA) + veredicto de suficiencia
+    # (delta de consecuencia: evidencia recuperada y % que aun exige
+    # conceptualizacion/especificacion).
+    annex_c_paths = evidence_delta.write(
+        base, knowledge_base=knowledge_base, documents=documents)
+    written.extend(annex_c_paths)
 
     return sorted(written)

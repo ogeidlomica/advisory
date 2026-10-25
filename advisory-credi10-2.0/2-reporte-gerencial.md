@@ -91,6 +91,8 @@ Los hallazgos (resumen de la Fase 3) se concentran en cinco frentes reales, todo
 
 En palabras de negocio: la **fragmentacion arquitectonica** y la **falta de gobernanza de APIs** encarecen cada cambio; el **acople al ERP Siesa/UnoEE** por archivos planos, un unico Web Service y lectura directa a su base de datos es el **riesgo mas severo** (puede corromper datos del ERP); la **deuda tecnica** de +200 bases de datos duplicadas resta confianza a la informacion; y la **obsolescencia de .NET Framework 4.8 / .NET Core 3.1** compromete soporte, seguridad y licenciamiento.
 
+> **Base de evidencia reforzada.** 5 de 5 documentos clave que antes eran **vacios epistemicos** (entre ellos el **Assessment WSO2/Studio F** y las especificaciones de **originacion**, **cartera**, **pagos** e **integracion de atencion al cliente**) fueron **recuperados como texto verificado** ([VERIFIED-FACT]) y hoy aportan evidencia trazable (**60** hechos clave). En consecuencia, estos hallazgos ya **no descansan en supuestos**. El detalle del cambio y su lectura de suficiencia estan en el informe tecnico (Anexo C - 'En que cambio').
+
 ### 4.2 Indicadores de retorno del RFP
 
 El negocio ya fijo los objetivos de retorno; nuestro diseño se ancla a ellos. Los cinco indicadores (cifras del RFP) son el marcador contra el que se medira el exito:

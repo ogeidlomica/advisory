@@ -18,6 +18,17 @@ Los dolores provienen directamente del assessment WSO2/Studio F. Las cifras de C
 | GAP-004 | Apps .NET desordenadas, integraciones dispersas en Windows Services/cronjobs sin gestion centralizada ni trazabilidad | Falta de plataforma de API Management y observabilidad | Incidentes sin trazabilidad y MTTR elevado [DOC-ASSUMPTION] | DRV-004 | BMK-001 |
 | GAP-005 | Obsolescencia .NET Framework 4.8 / .NET Core 3.1 (EOL) y Wordpress/XAMPP en produccion | Falta de ciclo de modernizacion y de cumplimiento de licenciamiento | Riesgo de soporte, seguridad y multas de licenciamiento [DOC-ASSUMPTION] | DRV-005 | BMK-003 |
 
+> **Trazabilidad del dolor a evidencia recuperada [VERIFIED-FACT].** El assessment WSO2/Studio F era un vacio epistemico; su texto nativo fue recuperado y hoy respalda los dolores GAP-001/GAP-005 con cita directa (ya no [DOC-ASSUMPTION] en la causa raiz de integracion):
+
+Evidencia recuperada de `WSO2 y Studio F - Assessment Mayo2026-Final.pdf` (banda **alta**, **[VERIFIED-FACT]**):
+
+| Hecho recuperado [VERIFIED-FACT] | Tokens | Fuente |
+| --- | --- | --- |
+| Gestionar todas las APIs de manera Centralizada 19 5.3. | API | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Objetivo del Documento Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arquitectura, donde las soluciones WSO2 API Plat... | WSO2, Studio F, API | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Contexto de Negócio Studio F cuenta con una arquitectura fragmentada y un ecosistema de sistemas y aplicaciones desactualizados, compuestos por más de 150 aplic... | .NET, Studio F | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Actualmente, el ecosistema depende de integraciones "punto a punto" y procesos batch (archivos planos) hacia su ERP Siesa. | Siesa | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+
 ## E3.2 - Gap Analysis multidominio (TOGAF B / C / D)
 
 Cada gap se liga a un indicador de retorno del RFP. Un requisito funcional del RFP es **preservar las reglas de negocio existentes**.

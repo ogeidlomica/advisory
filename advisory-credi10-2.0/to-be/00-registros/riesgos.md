@@ -31,7 +31,7 @@ flowchart TB
 | RSK-006 | datos | Inconsistencia por +200 bases de datos duplicadas | A nivel grupo existen +200 BDs duplicadas/inconsistentes con logica repetida y controles manuales en Excel (GAP-003); riesgo de datos poco confiables. El TO-BE define fuente unica de verdad (ADR-005, SBB-007). | Alta | Mitigando | [VERIFIED-FACT] | WSO2 y Studio F - Assessment Mayo2026-Final.pdf; Fase 3 (GAP-003) |
 | RSK-007 | aplicacion | Portal B2C sobre Wordpress/XAMPP en produccion | El canal B2C corre parcialmente sobre Wordpress/XAMPP en produccion (GAP-005), ampliando la superficie de ataque y la fragilidad operativa; el TO-BE lo moderniza a .NET 8 (SBB-006). | Media | Mitigando | [VERIFIED-FACT] | B2C.pdf; Fase 3 (GAP-005) |
 | RSK-008 | seguridad | Integraciones dispersas sin trazabilidad de errores | Las integraciones viven en servicios de Windows y cronjobs sin gestion centralizada ni observabilidad (GAP-004); riesgo de incidentes opacos y MTTR elevado. El TO-BE centraliza con API Management y observabilidad (SBB-001, SBB-005). | Media | Mitigando | [VERIFIED-FACT] | WSO2 y Studio F - Assessment Mayo2026-Final.pdf; Fase 3 (GAP-004) |
-| RSK-009 | negocio | Riesgo de desfase por vacios epistemicos del corpus | Una parte del corpus de proceso es solo-imagen (banda de cobertura baja/nula), lo que puede derivar en retrabajo de alcance si no se cierran los vacios con el negocio antes de construir. | Media | Abierto | [EPISTEMIC-VOID] | Base de Conocimiento (knowledge-base/coverage-checklist.md) |
+| RSK-009 | negocio | Riesgo de desfase por specs recuperadas aun sin ratificar | La capa de texto nativa del corpus de proceso fue recuperada (hoy banda 'alta' [VERIFIED-FACT]); el riesgo residual ya NO es de legibilidad sino de que las specs recuperadas (originacion, cartera, pagos, integracion WSO2) no se ratifiquen 1:1 con el negocio antes de construir, lo que puede derivar en retrabajo de alcance. | Media | Abierto | [DOC-ASSUMPTION] | Base de Conocimiento (knowledge-base/coverage-checklist.md) |
 
 ## Resumen
 
@@ -39,7 +39,7 @@ flowchart TB
 | --- | ---: |
 | Entradas registradas | 9 |
 | Niveles con al menos una entrada | 6 de 6 |
-| Etiquetas epistemicas presentes | [DOC-ASSUMPTION], [EPISTEMIC-VOID], [VERIFIED-FACT] |
+| Etiquetas epistemicas presentes | [DOC-ASSUMPTION], [VERIFIED-FACT] |
 
 > **Veredicto de completitud:** registro RSK con 9 entradas, todas con ID + nivel + severidad + estado.
 

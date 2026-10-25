@@ -182,7 +182,7 @@ La propuesta se emite bajo los siguientes supuestos y restricciones. Los registr
 | Supuesto | El cliente facilita el corpus y el acceso a SME para cerrar vacios epistemicos | [DOC-ASSUMPTION] |
 | Supuesto | El perfil corporativo y las cifras de inversion son de referencia recalibrable | [DOC-ASSUMPTION] |
 | Restriccion | La etapa es advisory + specs; **no** incluye construccion ni despliegue | [VERIFIED-FACT] |
-| Restriccion | Parte del corpus es solo-imagen; sus reglas finas no son derivables | [EPISTEMIC-VOID] |
+| Restriccion | El corpus documenta el AS-IS (texto nativo recuperado, [VERIFIED-FACT]); algunas reglas finas de negocio deben ratificarse con el cliente | [DOC-ASSUMPTION] |
 | Restriccion | Se preservan las reglas de negocio vigentes del cliente | [DOC-ASSUMPTION] |
 
 > Los vacios epistemicos se **registran**, no se rellenan con suposiciones presentadas como hechos.

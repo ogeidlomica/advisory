@@ -2677,5 +2677,198 @@ class TestLexicalChecklistComparison(unittest.TestCase):
             r"69\.74% \| 7[0-9]\.\d{2}% \| \+\d")
 
 
+class TestEvidenceDeltaAndRecoveredGrounding(unittest.TestCase):
+    """FEAT-002 (suficiencia/madurez, parte 1 + 'en que cambio').
+
+    Cubre que (a) los 5 PDF recuperados son [VERIFIED-FACT] banda 'alta' en la
+    KB; (b) el advisory generado ya cita evidencia recuperada del Assessment
+    WSO2 y de al menos una spec de originacion/cartera; (c) el Anexo C ('en que
+    cambio') existe, esta enlazado y reporta el balance antes->ahora de vacios
+    (5 recuperados, 0 vacios hoy) de forma determinista; y (d) ningun archivo
+    generado etiqueta a los 5 documentos como [EPISTEMIC-VOID] / 'OCR pendiente'.
+    """
+
+    RECOVERED = [
+        "WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+        "B2C.pdf",
+        "ProcesoCorteCartera.pdf",
+        "Originacion_API_Inspektor.pdf",
+        "Api Integrador Atencion al cliente.pdf",
+    ]
+
+    ANEXO_C_REL = os.path.join(
+        "advisory-credi10-2.0", "3-informe-tecnico",
+        "anexo-c-en-que-cambio", "README.md")
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, text=True,
+            timeout=600,
+        )
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+
+        def _read(*parts):
+            with open(os.path.join(cls.out_dir, *parts), encoding="utf-8") as fh:
+                return fh.read()
+
+        cls.anexo_c = _read("3-informe-tecnico", "anexo-c-en-que-cambio",
+                            "README.md")
+        cls.tech_readme = _read("3-informe-tecnico", "README.md")
+        cls.phase1 = _read("01-contexto-as-is.md")
+        cls.phase3 = _read("03-gaps-y-viabilizacion.md")
+        cls.phase5 = _read("05-roadmap-estimacion-raid.md")
+        cls.exec_report = _read("2-reporte-gerencial.md")
+
+    # -- (a) KB: the 5 docs are [VERIFIED-FACT] band 'alta' ----------------- #
+    def test_five_docs_are_verified_fact_alta_in_kb(self):
+        from engine.knowledge import KnowledgeBase, VERIFIED_FACT
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        for name in self.RECOVERED:
+            doc = kb.by_filename(name)
+            self.assertIsNotNone(doc, f"la KB debe contener {name}")
+            self.assertEqual(doc.coverage_band, "alta",
+                             f"{name} debe ser banda 'alta'")
+            self.assertEqual(doc.epistemic_flag, VERIFIED_FACT,
+                             f"{name} debe ser [VERIFIED-FACT]")
+            self.assertGreater(len(doc.key_facts), 0,
+                               f"{name} debe aportar hechos clave recuperados")
+
+    # -- (b) advisory cites recovered evidence ------------------------------ #
+    def test_phase1_cites_recovered_wso2_evidence(self):
+        self.assertIn(
+            "Diagnostico de integracion AS-IS", self.phase1,
+            "la Fase 1 debe incluir el diagnostico groundeado del WSO2")
+        self.assertIn("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+                      self.phase1)
+        # Un token real recuperado del assessment: el ERP Siesa por archivos
+        # planos y un unico Web Service.
+        self.assertIn("archivos planos", self.phase1)
+        self.assertIn("Siesa", self.phase1)
+
+    def test_phase3_cites_recovered_wso2_evidence(self):
+        self.assertIn("evidencia recuperada [VERIFIED-FACT]", self.phase3)
+        self.assertIn("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+                      self.phase3)
+
+    def test_advisory_cites_an_originacion_or_cartera_spec(self):
+        # El Anexo C cita evidencia concreta recuperada de una spec de
+        # originacion/cartera (Inspektor o ProcesoCorteCartera), trazable.
+        self.assertTrue(
+            ("Originacion_API_Inspektor.pdf" in self.anexo_c) and
+            ("ProcesoCorteCartera.pdf" in self.anexo_c),
+            "el Anexo C debe citar las specs de originacion y cartera")
+        # Un hecho real recuperado del documento de Inspektor.
+        self.assertIn("Inspektor", self.anexo_c)
+        # Un hecho real recuperado del documento de cartera (nombre de proceso).
+        self.assertTrue(
+            ("Cartera" in self.anexo_c) or ("cartera" in self.anexo_c),
+            "el Anexo C debe reflejar la spec de cartera recuperada")
+
+    def test_executive_report_notes_recovered_evidence(self):
+        self.assertIn("Base de evidencia reforzada", self.exec_report)
+        self.assertIn("recuperados como texto verificado", self.exec_report)
+
+    # -- (c) 'en que cambio' section exists, linked, deterministic ---------- #
+    def test_anexo_c_exists_and_is_linked_from_master(self):
+        self.assertTrue(
+            os.path.isfile(os.path.join(_REPO_ROOT, self.ANEXO_C_REL)),
+            "debe generarse el Anexo C bajo 3-informe-tecnico/")
+        self.assertIn("anexo-c-en-que-cambio/README.md", self.tech_readme,
+                      "el README maestro debe enlazar el Anexo C")
+
+    def test_anexo_c_reports_before_after_void_count(self):
+        # 5 recuperados -> 0 vacios ahora, derivado deterministamente.
+        self.assertIn("5 de 5", self.anexo_c,
+                      "debe reportar 5 de 5 documentos recuperados")
+        self.assertIn("| Documentos en [EPISTEMIC-VOID] | 5 | 0 |",
+                      self.anexo_c,
+                      "el balance epistemico debe reportar 5 -> 0 vacios")
+        self.assertIn("| Documentos recuperados a [VERIFIED-FACT] | 0 | 5 |",
+                      self.anexo_c)
+
+    def test_anexo_c_has_sufficiency_verdict_with_percentages(self):
+        self.assertIn("Veredicto de suficiencia", self.anexo_c)
+        self.assertIn("conceptualizacion / especificacion", self.anexo_c)
+        # Porcentaje de cobertura de evidencia (100% hoy) + guia de esfuerzo.
+        self.assertIn("Cobertura de evidencia documental del corpus", self.anexo_c)
+        self.assertIn("~15-20%", self.anexo_c)
+
+    def test_anexo_c_grounded_numbers_match_live_kb(self):
+        # Las cifras 'ahora' se leen de la KB viva (no hardcodeadas).
+        from engine.knowledge import KnowledgeBase
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        wso2 = kb.by_filename(
+            "WSO2 y Studio F - Assessment Mayo2026-Final.pdf")
+        self.assertIn(f"{wso2.useful_ratio * 100.0:.2f}%", self.anexo_c,
+                      "el texto util VIVO de WSO2 debe aparecer en el Anexo C")
+
+    def test_anexo_c_write_is_deterministic(self):
+        import tempfile
+        from engine.knowledge import KnowledgeBase
+        from phases import evidence_delta as ed
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        with tempfile.TemporaryDirectory() as tmp:
+            first = ed.write(tmp, knowledge_base=kb)
+            self.assertEqual(first, sorted(first))
+            before = {p: open(p, encoding="utf-8").read() for p in first}
+            second = ed.write(tmp, knowledge_base=kb)
+            self.assertEqual(first, second)
+            after = {p: open(p, encoding="utf-8").read() for p in second}
+            self.assertEqual(before, after,
+                             "el Anexo C debe ser byte-identico entre corridas")
+
+    def test_anexo_c_degrades_without_knowledge_base(self):
+        from phases import evidence_delta as ed
+        body = ed.build_annex(knowledge_base=None)
+        self.assertIn("Anexo C", body)
+        # Sin KB viva no se fabrican numeros 'ahora'.
+        self.assertIn("n/d", body)
+
+    # -- (d) no generated file labels the 5 docs as void / OCR pendiente ---- #
+    def test_no_generated_file_labels_recovered_docs_as_void(self):
+        import re as _re
+        advisory_root = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        offenders = []
+        for dirpath, _dirs, files in os.walk(advisory_root):
+            for fn in files:
+                if not fn.endswith(".md"):
+                    continue
+                fpath = os.path.join(dirpath, fn)
+                with open(fpath, encoding="utf-8") as fh:
+                    for lineno, line in enumerate(fh, start=1):
+                        for name in self.RECOVERED:
+                            if name not in line:
+                                continue
+                            # Un marcado de recuperacion que menciona el flag
+                            # historico junto al actual [VERIFIED-FACT] ES
+                            # honesto (describe el cambio), no una etiqueta
+                            # stale. Solo falla si la linea marca el documento
+                            # como void SIN tambien afirmarlo verificado.
+                            if (("[EPISTEMIC-VOID]" in line or
+                                 "OCR pendiente" in line) and
+                                    "[VERIFIED-FACT]" not in line):
+                                offenders.append(
+                                    f"{fpath}:{lineno}: {line.strip()[:120]}")
+        self.assertEqual(
+            offenders, [],
+            "ningun archivo generado debe etiquetar los 5 documentos "
+            "recuperados como [EPISTEMIC-VOID]/'OCR pendiente' sin afirmarlos "
+            "verificados:\n" + "\n".join(offenders))
+
+    def test_phase5_no_longer_claims_image_only_void_modules(self):
+        # La nota de alta incertidumbre y RS-03 deben reflejar que no hay
+        # modulos en vacio por falta de texto.
+        self.assertIn("mayor incertidumbre por falta de texto fuente: ninguno",
+                      self.phase5)
+        self.assertNotIn(
+            "Modulos con evidencia solo en imagen [EPISTEMIC-VOID]",
+            self.phase5,
+            "RS-03 ya no debe afirmar modulos 'solo en imagen' [EPISTEMIC-VOID]")
+
+
 if __name__ == "__main__":
     unittest.main()

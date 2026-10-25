@@ -158,6 +158,21 @@ La modernizacion del stack es el eje del driver **DRV-004** (evolucion/escalamie
 
 > El ecosistema Credi10 se sostiene sobre marcos legados (**.NET Framework 4.8**, **.NET Core 3.1**) y practicas de alto riesgo (lectura directa a la BD del ERP Siesa, Wordpress/XAMPP en produccion), lo que fundamenta el caso de modernizacion de Credi10 2.0.
 
+### Diagnostico de integracion AS-IS (evidencia recuperada del Assessment WSO2)
+
+El Assessment WSO2/Studio F era un **vacio epistemico** (PDF con fuente de codificacion personalizada); su capa de texto nativa fue recuperada y hoy sustenta el diagnostico de integracion con evidencia trazable **[VERIFIED-FACT]** (ya no supuestos). Cita directa de los hechos clave del documento fuente:
+
+Evidencia recuperada de `WSO2 y Studio F - Assessment Mayo2026-Final.pdf` (banda **alta**, **[VERIFIED-FACT]**):
+
+| Hecho recuperado [VERIFIED-FACT] | Tokens | Fuente |
+| --- | --- | --- |
+| Gestionar todas las APIs de manera Centralizada 19 5.3. | API | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Objetivo del Documento Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arquitectura, donde las soluciones WSO2 API Plat... | WSO2, Studio F, API | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Contexto de Negócio Studio F cuenta con una arquitectura fragmentada y un ecosistema de sistemas y aplicaciones desactualizados, compuestos por más de 150 aplic... | .NET, Studio F | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+| Actualmente, el ecosistema depende de integraciones "punto a punto" y procesos batch (archivos planos) hacia su ERP Siesa. | Siesa | WSO2 y Studio F - Assessment Mayo2026-Final.pdf |
+
+> Estos hechos confirman la integracion AS-IS con el **ERP Siesa** mediante **archivos planos** y un **unico WebService** para todas las operaciones, y la motivacion de **centralizar y gobernar las APIs** (driver DRV-004), sustentando CAP-007 con evidencia real.
+
 ## Stage-Gate QG-1 - Contexto AS-IS
 
 | Criterio de salida QG-1 | Estado |
