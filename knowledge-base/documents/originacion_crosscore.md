@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 64.28% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `44384189e2953370b9244081d33954c7962912b27de2a80575cdd976454ade08` |
 
 ## Resumen jerarquico
 
-- Documento 'Originacion_CrossCore.pdf' (PDF): 27166 caracteres limpios extraidos (zlib+regex), texto util real 64.28%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Originacion_CrossCore.pdf' (PDF): 27166 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 64.28%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES ORIGINACION CROSSCORE STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWAR...
 - Seccion 2: as. Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares d...
 - Seccion 3: 1.2 Flujo del Proceso 1 2 3 4 Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 1.2 Detallar componentes existentes SOLUCION Creditos.Web. Crosscore • Control...

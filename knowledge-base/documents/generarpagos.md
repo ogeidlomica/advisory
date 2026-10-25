@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 60.38% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `77dac0283c54034229f645ac673a18e4351eb8425386e166b4fce46fe7759a79` |
 
 ## Resumen jerarquico
 
-- Documento 'GenerarPagos.pdf' (PDF): 80412 caracteres limpios extraidos (zlib+regex), texto util real 60.38%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'GenerarPagos.pdf' (PDF): 80412 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 60.38%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - SL - 00 3 Versión:001 Fecha: 21 / 12 /202 3 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 003 - M ódulo_Pago STF GROUP S.A. INFORMATICA – Py. CRED...
 - Seccion 2: s. Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de...
 - Seccion 3: T - SL - 00 3 Versión:001 Fecha: 21 / 12 /202 3 • Pago por consignación • Cargue de pago • Seguimiento del cargue de pagos Código:FT - SL - 00 3 Versión:001 Fec...

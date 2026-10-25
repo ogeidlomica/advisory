@@ -147,12 +147,75 @@ useful_ratio = caracteres en palabras reales (>= 3 letras, con acentos)
 Las perillas declarativas viven en `engine/knowledge.py`: `USEFUL_TEXT_BANDS`
 (alta >= 40%, media >= 20%, baja >= 3%, si no `nula`) y
 `MIN_USEFUL_RATIO_FOR_TEXT` (3%, umbral por debajo del cual un PDF se considera
-basado en imagen -> `[EPISTEMIC-VOID]` + 'OCR pendiente'). Con el corpus Credi10
-(todos PDF de imagen/escaneo) **ningun** PDF llega a 'alta' y los peores (WSO2
-Assessment, Api Integrador, Originacion API Inspektor, ProcesoCorteCartera)
-caen a `nula` + `[EPISTEMIC-VOID]`; solo los 3 PNG con transcripcion humana
-estatica quedan 'alta'. Las funciones `count_useful_chars`, `useful_text_ratio`
-y `useful_text_band` son deterministas y estan cubiertas por pruebas.
+basado en imagen -> `[EPISTEMIC-VOID]` + 'OCR pendiente'). Las funciones
+`count_useful_chars`, `useful_text_ratio` y `useful_text_band` son deterministas
+y estan cubiertas por pruebas.
+
+### Mejora del extractor: decodificacion `/ToUnicode` por fuente (recuperacion de texto NATIVO, no OCR)
+
+En una primera medicion con el extractor ingenuo (regex de parentesis sobre
+**cada** stream descomprimido), los 15 PDF del corpus Credi10 caian a bandas
+'baja' o 'nula' y **ninguno** llegaba a 'alta'; cinco de ellos (WSO2 Assessment,
+B2C, ProcesoCorteCartera, Originacion API Inspektor, Api Integrador) quedaban en
+`nula` + `[EPISTEMIC-VOID]`. La **causa raiz** NO era que fueran paginas-imagen:
+el texto si existe en la capa de texto del PDF, pero (1) usa **fuentes embebidas
+Type0/Identity-H con codificacion personalizada** cuyos codigos solo se mapean a
+Unicode via el CMap `/ToUnicode` de cada fuente, y (2) el extractor viejo tambien
+**filtraba bytes binarios de imagen/fuente como si fueran texto**, inflando el
+denominador y hundiendo el ratio de texto util.
+
+La solucion (`engine/pdf_text.py`, **solo stdlib** `zlib` + `re`, **determinista**)
+lee unicamente dentro de las regiones de texto `BT...ET`, rastrea la fuente
+activa via el operador `Tf`, y decodifica tanto literales `( ... )` (con escapes
+octales) como cadenas hex `< ... >` en `Tj`/`TJ`/`'`/`"` mapeando cada codigo por
+el `/ToUnicode` (y `/Encoding /Differences` como respaldo) de la fuente activa,
+con separacion de palabras por kerning en los arreglos `TJ`. Es **tolerante a
+fallos**: una fuente sin `/ToUnicode` degrada a la heuristica latin-1 y nunca
+aborta el documento. Esto es **recuperacion de texto NATIVO** (capa L1), **no
+OCR**: el texto recuperado es parte de la capa de texto del PDF, por lo que
+permanece `[VERIFIED-FACT]` (no `[OCR-EXTRACTED]`).
+
+### Comparativa de texto util ANTES / DESPUES
+
+Con la decodificacion por fuente, **los 15 PDF pasaron a banda 'alta'** y los **5
+documentos antes en `nula` / `[EPISTEMIC-VOID]` se recuperaron a texto nativo
+`[VERIFIED-FACT]`**. Ganancias netas de los 5 criticos (texto util, en puntos
+porcentuales):
+
+| Documento | Antes | Despues |
+| --- | ---: | ---: |
+| WSO2 y Studio F - Assessment | 1.60% nula | 69.74% alta |
+| B2C | 2.55% nula | 54.60% alta |
+| ProcesoCorteCartera | 1.09% nula | 53.85% alta |
+| Originacion API Inspektor | 0.99% nula | 68.27% alta |
+| Api Integrador Atencion al cliente | 0.70% nula | 64.31% alta |
+
+Los 10 PDF restantes (que ya extraian algo pero en banda 'baja') tambien
+subieron a 'alta' (p. ej. Llamada predictiva 7.15% -> 75.66%, RFP 5.92% ->
+73.05%). Los 3 PNG, transcripcion humana estatica, se mantienen sin cambios
+('alta'). El resumen de bandas pasa de dispersion en baja/nula a **18/18
+'alta'**. La comparativa completa, con delta por documento y prosa honesta sobre
+que subio y por que, se emite en `knowledge-base/coverage-checklist.md` (tabla
+antes/despues leida de la linea base declarativa `USEFUL_TEXT_BASELINE_PCT` vs el
+`useful_ratio` vivo). El limite honesto: una pagina que sea imagen raster real
+(JPEG `DCTDecode`) sin capa de texto seguiria necesitando OCR real (capa L2), que
+no esta disponible en este entorno.
+
+### Arquitectura IA/OCR multicapa de extraccion (L1-L4)
+
+La decodificacion de fuentes es la **capa L1** de una estrategia de extraccion
+**multicapa** disenada para maximizar el texto util de todo tipo de documento:
+L1 texto nativo + decodificacion `/ToUnicode` **[implementado aqui]**, L2 OCR de
+paginas-imagen (`[OCR-EXTRACTED]`), L3 vision/LLM multimodal para layout/tablas/
+diagramas complejos, y L4 NLP/LLM de post-proceso para estructuracion y
+extraccion de entidades con trazabilidad. Esa estrategia y sus tacticas (
+umbrales de confianza, validacion de cobertura, gobernanza epistemica, tabla
+tactica por tipo de documento y diagrama de flujo con fallback) se documentan en
+el skill generico `document-extraction-architecture` y se presentan como
+recomendacion de advisory en el **Anexo B** generado del informe tecnico (ver mas
+abajo). **Solo L1 esta implementado en este sandbox**; L2-L4 requieren el entorno
+de produccion (motores OCR, modelos de vision y LLM que aqui no estan
+disponibles).
 
 ### Capacidad OCR con degradacion honesta (`engine/ocr.py`)
 
@@ -355,18 +418,30 @@ El entorno **no tiene acceso a PyPI** (no se puede `pip install`), por lo que el
 motor usa **exclusivamente la biblioteca estandar de Python 3.11**.
 
 Para leer el corpus **no** se usan librerias de PDF (pymupdf/pdfplumber no estan
-disponibles). La extraccion de texto se hace con un enfoque **`zlib` + regex**:
-se localizan los streams `FlateDecode` del PDF, se **descomprimen con `zlib`** y
-se extrae el texto entre parentesis de los operadores `Tj`/`TJ`, limpiando
-fragmentacion de caracteres y etiquetas de idioma. Los **diagramas PNG** son
-imagenes binarias: se registran como evidencia (sha256, tamanio) y su contenido
-se transcribe en el conocimiento de los roles/corpus. La mayoria de los PDFs de
-proceso son ricos en imagenes con poco **texto util real** extraible; el motor
-los reclasifica honestamente por texto util (no por tamanio crudo) y expone una
-capacidad **OCR** lista (`engine/ocr.py`) que se ejecuta **si** hay motor
+disponibles). La extraccion de texto se hace con un enfoque **`zlib` +
+decodificacion `/ToUnicode` por fuente** (modulo `engine/pdf_text.py`): se
+localizan los streams `FlateDecode` del PDF, se **descomprimen con `zlib`** y se
+leen solo las regiones de texto `BT...ET`, decodificando literales `( ... )` y
+cadenas hex `< ... >` de los operadores `Tj`/`TJ`/`'`/`"` a traves del CMap
+`/ToUnicode` (y `/Encoding /Differences`) de la fuente activa rastreada por `Tf`;
+luego se limpia la fragmentacion de caracteres y las etiquetas de idioma. Esta es
+**recuperacion de texto NATIVO (capa L1), no OCR**, por lo que el texto
+recuperado permanece `[VERIFIED-FACT]`. Gracias a esta decodificacion por fuente,
+**los 15 PDF del corpus Credi10 pasaron a banda 'alta'** (ver 'Mejora del
+extractor' y 'Comparativa ANTES / DESPUES' mas arriba), incluidos los 5 que antes
+caian a `nula` + `[EPISTEMIC-VOID]`.
+
+Los **diagramas PNG** son imagenes binarias: se registran como evidencia
+(sha256, tamanio) y su contenido se transcribe estaticamente en el conocimiento
+de los roles/corpus. Para los casos que la capa nativa **no** resuelve (una
+pagina que sea imagen raster real `DCTDecode` sin capa de texto), el motor
+reclasifica honestamente por texto util (no por tamanio crudo) y expone una
+capacidad **OCR** lista (`engine/ocr.py`, capa L2) que se ejecuta **si** hay motor
 disponible y degrada de forma honesta cuando no lo hay (ver 'Capacidad OCR' mas
-arriba). En este entorno no hay motor OCR, por lo que esos PDF quedan 'OCR
-pendiente' / `[EPISTEMIC-VOID]` sin fabricar texto.
+arriba): en este entorno no hay motor OCR, de modo que cualquier remanente queda
+'OCR pendiente' / `[EPISTEMIC-VOID]` sin fabricar texto. Con el corpus actual la
+capa L1 recupera texto util suficiente en los 18 documentos, por lo que el OCR no
+llega a consultarse.
 
 ## Estructura del directorio
 
@@ -375,7 +450,8 @@ advisory-system/
 ├── quickstart.py          # CLI de entrada (--phase, --corpus, --out)
 ├── README.md              # este documento
 ├── engine/                # nucleo del motor
-│   ├── corpus.py          # CorpusLoader: descubre PDFs/PNGs y extrae texto (zlib+regex)
+│   ├── corpus.py          # CorpusLoader: descubre PDFs/PNGs y extrae texto (delega en pdf_text)
+│   ├── pdf_text.py        # extractor PDF por fuente: /ToUnicode CMap + Tf + Tj/TJ (texto nativo L1, no OCR)
 │   ├── knowledge.py       # KnowledgeBase determinista (indice + resumenes + hechos + checklist; banda por texto util real)
 │   ├── ocr.py             # adaptador OCR (sondeo de capacidad + extraccion con degradacion honesta)
 │   ├── skills.py          # SkillsLoader: carga .kiro/skills y parsea el catalogo de IA
@@ -462,7 +538,7 @@ El motor (`engine/`) no necesita modificarse para cambiar contenido.
 
 ```mermaid
 flowchart LR
-    CORPUS[(Corpus<br/>PDFs + PNGs)] --> CL[CorpusLoader<br/>zlib + regex]
+    CORPUS[(Corpus<br/>PDFs + PNGs)] --> CL[CorpusLoader<br/>zlib + /ToUnicode por fuente]
     CL --> ORCH[AdvisoryOrchestrator]
     ROLES[roles.json<br/>17 roles + celulas] --> ORCH
     PHASES[phases.py<br/>7 fases + gates] --> ORCH

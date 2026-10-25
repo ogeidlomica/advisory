@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 64.31% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `230c3c9a38f8a8dbd25ffa205504ce39fb2817ee7b3fa7e5948051982dde6a31` |
 
 ## Resumen jerarquico
 
-- Documento 'Api Integrador Atencion al cliente.pdf' (PDF): 15395 caracteres limpios extraidos (zlib+regex), texto util real 64.31%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Api Integrador Atencion al cliente.pdf' (PDF): 15395 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 64.31%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES API Integrador Atención Al Cliente STF GROUP S.A. INFORMATICA – Py. CR...
 - Seccion 2: rtificado Al Día ................................ ................................ ................................ . 9 Generar Certificado de Deuda ..............
 - Seccion 3: /o Comentarios ................................ ................................ ....... 13 2. CASOS DE PRUEBAS UNITARIAS 17 Código:FT - DG - 00 2 Versión:001 F...

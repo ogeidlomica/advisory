@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 75.66% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `75de074b46dab3babd00ecf877816c3fa41fe29558b18de0c640bcdebf1a6b07` |
 
 ## Resumen jerarquico
 
-- Documento 'Llamada predictiva.pdf' (PDF): 6866 caracteres limpios extraidos (zlib+regex), texto util real 75.66%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Llamada predictiva.pdf' (PDF): 6866 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 75.66%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: FORMATO DE DESARROLLO E INTEGRACIONES Integración Llamada Predictiva STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWARE PROPIO Cali, martes 6 de enero del 202 6...
 - Seccion 2: adaPredictivaBLL para lógica de negocio • Patrón Job - Jobs programados con Quartz • Inyección de Dependencias - Microsoft DI Container 2. COMPONENTES EXISTENTE...
 - Seccion 3: • GestionPredictivaDTO.cs : Datos de gestión predictiva • TelefonoTelefonoRequestDTO.cs : Solicitudes teléfono a teléfono Jobs Programados • ClasificacionInserc...

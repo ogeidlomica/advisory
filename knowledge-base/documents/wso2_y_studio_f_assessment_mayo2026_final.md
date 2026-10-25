@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 69.74% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `a8f03b42fa08b2021dc94f002ff581926f228cc00f42cbb95060fa93646972fd` |
 
 ## Resumen jerarquico
 
-- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 27354 caracteres limpios extraidos (zlib+regex), texto util real 69.74%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 27354 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 69.74%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Assessment de Arquitectura Fecha: Mayo, 2026 Index 1. Objetivo del Documento ................................ ................................ ....................
 - Seccion 2: GID ................................ ................................ ................................ ........... 7 3.4. Architectura PLM ........................
 - Seccion 3: ...... ......... 15 5.1. Simplificar y estandarizar las integraciones ................................ ................................ ...... 15 5.2. Gestionar...

@@ -8,7 +8,7 @@ Politica **complete-corpus-ingestion**: se verifica que CADA documento del corpu
 
 ## Veredicto de ingesta: 18/18 documentos procesados (sin muestreo)
 
-- PDF procesados (zlib+regex): **15**
+- PDF procesados (zlib + /ToUnicode por fuente): **15**
 - PNG transcritos (sin OCR): **3**
 - Documentos recuperados via OCR `[OCR-EXTRACTED]`: **0**
 - Documentos **pendiente-OCR** (PDF basado en imagen, texto util insuficiente): **0**
@@ -16,24 +16,24 @@ Politica **complete-corpus-ingestion**: se verifica que CADA documento del corpu
 
 | # | Documento | Procesado | Metodo | Texto util real | Banda | Flag |
 | --- | --- | --- | --- | ---: | --- | --- |
-| 1 | Api Integrador Atencion al cliente.pdf | si | texto nativo (zlib+regex) | 64.31% | alta | [VERIFIED-FACT] |
+| 1 | Api Integrador Atencion al cliente.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 64.31% | alta | [VERIFIED-FACT] |
 | 2 | Arquitectura_Aplicacion_Despliegue_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 64.87% | alta | [VERIFIED-FACT] |
 | 3 | Arquitectura_Infraestructura_AWS_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 70.29% | alta | [VERIFIED-FACT] |
-| 4 | B2C.pdf | si | texto nativo (zlib+regex) | 54.60% | alta | [VERIFIED-FACT] |
-| 5 | BotonEcommerce.pdf | si | texto nativo (zlib+regex) | 50.10% | alta | [VERIFIED-FACT] |
-| 6 | Captura Foto.pdf | si | texto nativo (zlib+regex) | 66.06% | alta | [VERIFIED-FACT] |
+| 4 | B2C.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 54.60% | alta | [VERIFIED-FACT] |
+| 5 | BotonEcommerce.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 50.10% | alta | [VERIFIED-FACT] |
+| 6 | Captura Foto.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 66.06% | alta | [VERIFIED-FACT] |
 | 7 | Diagrama_Contexto_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 70.95% | alta | [VERIFIED-FACT] |
-| 8 | Envio de RCL y RCR.pdf | si | texto nativo (zlib+regex) | 66.43% | alta | [VERIFIED-FACT] |
-| 9 | GenerarPagos.pdf | si | texto nativo (zlib+regex) | 60.38% | alta | [VERIFIED-FACT] |
-| 10 | LinkDePagos.pdf | si | texto nativo (zlib+regex) | 65.91% | alta | [VERIFIED-FACT] |
-| 11 | Llamada predictiva.pdf | si | texto nativo (zlib+regex) | 75.66% | alta | [VERIFIED-FACT] |
-| 12 | Originacion_API_Datacredito.pdf | si | texto nativo (zlib+regex) | 68.03% | alta | [VERIFIED-FACT] |
-| 13 | Originacion_API_Inspektor.pdf | si | texto nativo (zlib+regex) | 68.27% | alta | [VERIFIED-FACT] |
-| 14 | Originacion_Aplicacion_ADMIN.pdf | si | texto nativo (zlib+regex) | 69.63% | alta | [VERIFIED-FACT] |
-| 15 | Originacion_CrossCore.pdf | si | texto nativo (zlib+regex) | 64.28% | alta | [VERIFIED-FACT] |
-| 16 | ProcesoCorteCartera.pdf | si | texto nativo (zlib+regex) | 53.85% | alta | [VERIFIED-FACT] |
-| 17 | RFP_CREDI10_2_0.pdf | si | texto nativo (zlib+regex) | 73.05% | alta | [VERIFIED-FACT] |
-| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | si | texto nativo (zlib+regex) | 69.74% | alta | [VERIFIED-FACT] |
+| 8 | Envio de RCL y RCR.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 66.43% | alta | [VERIFIED-FACT] |
+| 9 | GenerarPagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 60.38% | alta | [VERIFIED-FACT] |
+| 10 | LinkDePagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 65.91% | alta | [VERIFIED-FACT] |
+| 11 | Llamada predictiva.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 75.66% | alta | [VERIFIED-FACT] |
+| 12 | Originacion_API_Datacredito.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 68.03% | alta | [VERIFIED-FACT] |
+| 13 | Originacion_API_Inspektor.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 68.27% | alta | [VERIFIED-FACT] |
+| 14 | Originacion_Aplicacion_ADMIN.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.63% | alta | [VERIFIED-FACT] |
+| 15 | Originacion_CrossCore.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 64.28% | alta | [VERIFIED-FACT] |
+| 16 | ProcesoCorteCartera.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 53.85% | alta | [VERIFIED-FACT] |
+| 17 | RFP_CREDI10_2_0.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 73.05% | alta | [VERIFIED-FACT] |
+| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.74% | alta | [VERIFIED-FACT] |
 
 ## Resumen de cobertura (por texto util real)
 

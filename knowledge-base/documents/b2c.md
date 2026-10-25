@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 54.60% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `cde25f1342dbc9b86dd5b45e54e5930701aeffeee32eb40fc03694710abc0c2f` |
 
 ## Resumen jerarquico
 
-- Documento 'B2C.pdf' (PDF): 14001 caracteres limpios extraidos (zlib+regex), texto util real 54.60%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'B2C.pdf' (PDF): 14001 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 54.60%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 011 - APIs Portal clientes B2C STF GROUP S.A. INFORMATICA –...
 - Seccion 2: Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de de...
 - Seccion 3: web API “ Creditos.Web.Servicios ” donde se establece el funcionamiento de los requerimientos correspondientes a Link de recaudo, botón ecommerce e integración...

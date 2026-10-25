@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 73.05% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `9ea0d58a40e2321c6c37d3b49636dad92574981e2ee8290a4bbc17abb4cb0931` |
 
 ## Resumen jerarquico
 
-- Documento 'RFP_CREDI10_2_0.pdf' (PDF): 22037 caracteres limpios extraidos (zlib+regex), texto util real 73.05%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'RFP_CREDI10_2_0.pdf' (PDF): 22037 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 73.05%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Carrera 34 No. 10 - 581 Tel 6850000 Ext. 2269 Acopi - Yumbo SOLICITUD DE OFERTA (RFP) No: 00 1 PROYECTO DE CREDI10 2.0 STF GROUP S.A. Carrera 34 No. 10 - 581, Z...
 - Seccion 2: umplimiento a cabalidad de los requerimientos solicitados por LA EMPRESA para “ PROYECTO CREDI10 2.0 ”. 1. 4 VISITA AL LUGAR DE PRESTACIÓN DE L SERVICIO Para ef...
 - Seccion 3: .ospina@studiof.com.co A cualquiera de estos contactos podrán enviar la solicitud de reunión para que puedan coordinarla entre las partes. No se acordarán reuni...

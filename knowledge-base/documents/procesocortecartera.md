@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 53.85% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `c5058d4fb7bac933c6b1b535b4a095bbedcd89534f0faf774ba86e59d83cf281` |
 
 ## Resumen jerarquico
 
-- Documento 'ProcesoCorteCartera.pdf' (PDF): 44100 caracteres limpios extraidos (zlib+regex), texto util real 53.85%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'ProcesoCorteCartera.pdf' (PDF): 44100 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 53.85%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 004 - Módulo_Cartera STF GROUP S.A. INFORMATICA – Py. CREDI1...
 - Seccion 2: o s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de desarrollo q...
 - Seccion 3: o plano en una hora y fecha determinada. BASE DE DATOS C10_ Credi10_NET Tablas y Procedimientos almacenados 1.3 Detallar funcionalidades Código:FT - DG - 00 2 V...

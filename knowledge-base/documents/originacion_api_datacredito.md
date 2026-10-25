@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 68.03% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `d3e307f9ec7482661d3910ce307bde920e50ba6a657409c2c77b535a5bb7d7f2` |
 
 ## Resumen jerarquico
 
-- Documento 'Originacion_API_Datacredito.pdf' (PDF): 16966 caracteres limpios extraidos (zlib+regex), texto util real 68.03%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Originacion_API_Datacredito.pdf' (PDF): 16966 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 68.03%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código: ORI - API - 00 1 Versión:001 Fecha: 08/ 11 /202 3 FORMATO DE DESARROLLO E INTEGRACIONES API DATACREDITO STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWAR...
 - Seccion 2: pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de desarrollo que define Arq...
 - Seccion 3: obacióno negación del cupo. c) Retorno de información crediticia: La API responde a las solicitudes de los usuarios proporcionando la información crediticia det...

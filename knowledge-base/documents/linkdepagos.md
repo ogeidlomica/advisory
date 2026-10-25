@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 65.91% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `b7217bd96e21cbf58b318f06919d3c780c1b80c92e12dc6ec5dad66398b277aa` |
 
 ## Resumen jerarquico
 
-- Documento 'LinkDePagos.pdf' (PDF): 11540 caracteres limpios extraidos (zlib+regex), texto util real 65.91%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'LinkDePagos.pdf' (PDF): 11540 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 65.91%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 011 - APIs Link de recaudos Credi10 STF GROUP S.A. INFORMATI...
 - Seccion 2: das. Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares...
 - Seccion 3: Crear endpoint compensar: es la que genera el recibo de caja, envía correo con el ticket de pago. 1.2 Detallar componentes existentes Para el desarrollo de los...

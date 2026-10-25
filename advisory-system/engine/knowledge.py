@@ -315,7 +315,7 @@ def build_hierarchical_summary(doc: Document) -> List[str]:
 
     summary: List[str] = [
         f"Documento '{doc.filename}' (PDF): {len(text)} caracteres limpios "
-        f"extraidos (zlib+regex), texto util real "
+        f"extraidos (zlib + /ToUnicode por fuente), texto util real "
         f"{doc.useful_ratio * 100:.2f}%, banda '{doc.coverage_band}', "
         f"clasificacion {doc.epistemic_flag}.",
     ]
@@ -350,7 +350,8 @@ def enrich_document(doc: Document,
     raw_length = int(doc.metadata.get("raw_length", 0)) if doc.kind == "pdf" else 0
     if doc.kind == "pdf":
         clean_length = len(doc.extracted_text or "")
-        doc.ingestion_method = "zlib+regex (capa de texto PDF)"
+        doc.ingestion_method = (
+            "zlib + /ToUnicode por fuente (capa de texto nativa PDF)")
     else:
         # PNG: the static transcription is the ingested content.
         clean_length = len(doc.description or "")
@@ -480,8 +481,9 @@ class KnowledgeBase:
             "",
             f"- Documentos totales ingeridos: **{self.total}** "
             f"({n_pdf} PDF + {n_png} PNG)",
-            "- Metodo PDF: `zlib+regex` (capa de texto). Metodo PNG: "
-            "transcripcion estatica (sin OCR).",
+            "- Metodo PDF: `zlib` + decodificacion `/ToUnicode` por fuente "
+            "(capa de texto nativa L1, recuperacion de texto, NO OCR). Metodo "
+            "PNG: transcripcion estatica (sin OCR).",
             "- Banda de cobertura por **texto util real** (palabras reales / "
             "bytes de texto extraido), no por tamano crudo.",
             "- Honestidad epistemica: los PDF basados en imagen (sin texto util "
@@ -635,7 +637,7 @@ class KnowledgeBase:
             f"## Veredicto de ingesta: {self.total}/{self.total} documentos "
             "procesados (sin muestreo)",
             "",
-            f"- PDF procesados (zlib+regex): **{n_pdf}**",
+            f"- PDF procesados (zlib + /ToUnicode por fuente): **{n_pdf}**",
             f"- PNG transcritos (sin OCR): **{n_png}**",
             f"- Documentos recuperados via OCR `{OCR_EXTRACTED}`: **{n_ocr}**",
             f"- Documentos **pendiente-OCR** (PDF basado en imagen, texto util "
@@ -786,7 +788,7 @@ class KnowledgeBase:
             return "[OCR-EXTRACTED]"
         if "OCR pendiente" in doc.ingestion_method:
             return "pendiente-OCR"
-        return "texto nativo (zlib+regex)"
+        return "texto nativo (zlib + /ToUnicode por fuente)"
 
     def write(self, kb_dir: str) -> List[str]:
         """Render the knowledge base to ``kb_dir`` deterministically.

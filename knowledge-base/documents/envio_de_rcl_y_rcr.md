@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 66.43% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `8a5b0becf5b4a0f87f2450a4da700c1fda0561abb55d45217cfb0d7c8a31e5c7` |
 
 ## Resumen jerarquico
 
-- Documento 'Envio de RCL y RCR.pdf' (PDF): 11655 caracteres limpios extraidos (zlib+regex), texto util real 66.43%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Envio de RCL y RCR.pdf' (PDF): 11655 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 66.43%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: FORMATO DE DESARROLLO E INTEGRACIONES Integración envió de RCL y RCR a UnoE STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWARE PROPIO Cali, viernes 28 de noviemb...
 - Seccion 2: s del mes inmediatamente anterior, agrupado por banco y tipo de transacción. Dejar este día configu rable en parámetros 4 - Crear el documento con la fecha del...
 - Seccion 3: BI A CG BANCOLO MBIA TX CB1 NC CSG CREDI10 AV BANCOLOMBI A TX Otros valores del conector F357_ID_CAJA = 02 F350_ID_TERCERO = CREDI10 F351_ID_TERCERO_OTRO_ING =...

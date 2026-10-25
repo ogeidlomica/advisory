@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 66.06% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `694c1d2001962cbaf2d5f203ee2ca371a98e11f591d7b7fedea032f639d0e9e7` |
 
 ## Resumen jerarquico
 
-- Documento 'Captura Foto.pdf' (PDF): 13318 caracteres limpios extraidos (zlib+regex), texto util real 66.06%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Captura Foto.pdf' (PDF): 13318 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 66.06%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES CAPTURA FOTO STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWARE PROPIO...
 - Seccion 2: e pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de desarrollo que define A...
 - Seccion 3: sión:001 Fecha: 08/06/2021 Creditos.Web. Admin • Controladores o Desembolso Controller.cs • Vistas o Index.cshtml o Create.cshtml o Camara .cshtml Clases y vist...

@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 69.63% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `1e1e01d8565d388f0b33fd58f37cc11e3c84fb432976828a3ecf6387d64b2209` |
 
 ## Resumen jerarquico
 
-- Documento 'Originacion_Aplicacion_ADMIN.pdf' (PDF): 16394 caracteres limpios extraidos (zlib+regex), texto util real 69.63%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Originacion_Aplicacion_ADMIN.pdf' (PDF): 16394 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 69.63%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES Originacion Aplicación Admin STF GROUP S.A. INFORMATICA – Py. CREDI10...
 - Seccion 2: sí como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de des...
 - Seccion 3: er.cshtml Clases y vistas implementadas para cumplir con el propósito de registrar un prospecto y crear el cupo . Creditos.BLL • Prospectos.cs • CuposController...

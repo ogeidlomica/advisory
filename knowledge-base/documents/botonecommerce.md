@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 50.10% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `7022aa5fb6e89c5b8d695f93ce53aa82c5d41e198e1d4408c9c3199322fb8f1d` |
 
 ## Resumen jerarquico
 
-- Documento 'BotonEcommerce.pdf' (PDF): 13995 caracteres limpios extraidos (zlib+regex), texto util real 50.10%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'BotonEcommerce.pdf' (PDF): 13995 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 50.10%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 011 - APIs Botón Ecommerce Credi10 STF GROUP S.A. INFORMATIC...
 - Seccion 2: as. Así como lo s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares d...
 - Seccion 3: e OTP de compra y lo envié por correo y SMS para seguir con el proceso de compra desde el ecommerce. ● Crear endpoint para crear el pagare de la compra realizad...

@@ -5,7 +5,7 @@ Artefacto **generado** por el motor `advisory-system/` a partir de la ingesta CO
 > **Regenerar:** `python3 advisory-system/quickstart.py --phase all`
 
 - Documentos totales ingeridos: **18** (15 PDF + 3 PNG)
-- Metodo PDF: `zlib+regex` (capa de texto). Metodo PNG: transcripcion estatica (sin OCR).
+- Metodo PDF: `zlib` + decodificacion `/ToUnicode` por fuente (capa de texto nativa L1, recuperacion de texto, NO OCR). Metodo PNG: transcripcion estatica (sin OCR).
 - Banda de cobertura por **texto util real** (palabras reales / bytes de texto extraido), no por tamano crudo.
 - Honestidad epistemica: los PDF basados en imagen (sin texto util real) se marcan `[EPISTEMIC-VOID]` y 'OCR pendiente'; el texto recuperado via OCR se marca `[OCR-EXTRACTED]`. Nunca se fabrica.
 

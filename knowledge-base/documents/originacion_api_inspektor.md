@@ -13,12 +13,12 @@
 | texto util real (palabras / bytes extraidos) | 68.27% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
 | sha256 | `5699645db159f4aed9e6e8e3d890cd99b0f3c60127129ca70780bd280e354ce2` |
 
 ## Resumen jerarquico
 
-- Documento 'Originacion_API_Inspektor.pdf' (PDF): 12636 caracteres limpios extraidos (zlib+regex), texto util real 68.27%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Originacion_API_Inspektor.pdf' (PDF): 12636 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 68.27%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código: ORI - API - 00 1 Versión:001 Fecha: 08/ 11 /202 3 FORMATO DE DESARROLLO E INTEGRACIONES API IN SPEKTOR STF GROUP S.A. INFORMATICA – Py. CREDI10 SOFTWARE...
 - Seccion 2: ruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de desarrollo que define Arqu...
 - Seccion 3: el estudio . c) Retorno de información por listas restrictivas : La API responde a las solicitudes de los usuarios proporcionando la información de si el client...
