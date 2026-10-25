@@ -81,6 +81,19 @@ del cliente, pensadas para reutilizarse en otros contextos/corpus:
   tecnico): estructura **multinivel** (fase -> tema -> subtema), con narrativa
   de analisis sustancial (no solo tablas/Mermaid) orientada a una estimacion lo
   mas acertada posible.
+- **`ocr-image-extraction`** - politica declarativa de **OCR**: cuando aplicarlo
+  (PDF/PNG con bajo ratio de texto util / paginas solo-imagen), los motores
+  soportados en orden de preferencia (pytesseract/Tesseract, ocrmypdf,
+  pdfimages+tesseract, pdftoppm+tesseract), el umbral de confianza, la etiqueta
+  epistemica `[OCR-EXTRACTED]` para el texto recuperado y la **regla de
+  degradacion honesta** cuando no hay motor disponible (no se inventa texto; se
+  registra 'OCR pendiente / no disponible' y se reporta la cobertura real).
+- **`requirements-traceability`** - politica del **Anexo A** de trazabilidad de
+  requisitos: responder **punto a punto** cada solicitud del cliente con **cita
+  al documento fuente**; como se derivan las solicitudes **dinamicamente** del
+  corpus; los dos artefactos obligatorios (checklist marcable + tabla de
+  trazabilidad) y la regla de degradacion (Pendiente + `[EPISTEMIC-VOID]` donde
+  falta texto util / OCR).
 
 El motor las carga con `engine/skills.py` (`SkillsLoader`): descubre los
 `SKILL.md`, parsea el frontmatter y convierte el catalogo de IA en entradas
@@ -99,7 +112,8 @@ en `../knowledge-base/` durante `--phase all`:
 - **`coverage-checklist.md`** - checklist de cobertura que confirma
   `N/N documentos procesados` (sin muestreo) y marca honestamente los documentos
   de baja cobertura / **[EPISTEMIC-VOID]** (p. ej. PDFs escaneados sin capa de
-  texto util o PNGs binarios), sin fabricar evidencia.
+  texto util o PNGs binarios), sin fabricar evidencia. La banda se **recalibra
+  por texto util REAL** (ver abajo), no por tamanio crudo.
 - **`key-facts.md`** - hechos clave consolidados, cada uno **trazable** a su
   documento fuente.
 - **`documents/<id>.md`** - resumen jerarquico por documento.
@@ -107,6 +121,77 @@ en `../knowledge-base/` durante `--phase all`:
 La Base de Conocimiento es la fuente que el advisory consume para trazar cada
 decision a su evidencia; la Fase 5 ata la **incertidumbre de estimacion** de
 cada modulo a la banda de cobertura de su documento fuente.
+
+### Cobertura por texto util REAL (no por tamanio crudo)
+
+La banda de cobertura y el flag epistemico de cada documento ya **no** se
+derivan del tamanio del texto extraido (`texto_limpio / bytes`), que
+**sobrestimaba** la cobertura de los PDF basados en imagen. Ahora se derivan del
+**texto util real**:
+
+```
+useful_ratio = caracteres en palabras reales (>= 3 letras, con acentos)
+               / bytes de texto extraido
+```
+
+Las perillas declarativas viven en `engine/knowledge.py`: `USEFUL_TEXT_BANDS`
+(alta >= 40%, media >= 20%, baja >= 3%, si no `nula`) y
+`MIN_USEFUL_RATIO_FOR_TEXT` (3%, umbral por debajo del cual un PDF se considera
+basado en imagen -> `[EPISTEMIC-VOID]` + 'OCR pendiente'). Con el corpus Credi10
+(todos PDF de imagen/escaneo) **ningun** PDF llega a 'alta' y los peores (WSO2
+Assessment, Api Integrador, Originacion API Inspektor, ProcesoCorteCartera)
+caen a `nula` + `[EPISTEMIC-VOID]`; solo los 3 PNG con transcripcion humana
+estatica quedan 'alta'. Las funciones `count_useful_chars`, `useful_text_ratio`
+y `useful_text_band` son deterministas y estan cubiertas por pruebas.
+
+### Capacidad OCR con degradacion honesta (`engine/ocr.py`)
+
+El modulo `engine/ocr.py` (solo stdlib) es la contraparte de motor del skill
+`ocr-image-extraction`. Hace un **sondeo de capacidad en tiempo de ejecucion**
+(`detect_ocr_capability()`): detecta binarios via `shutil.which` (tesseract,
+ocrmypdf, pdfimages, pdftoppm) y modulos via `try/except ImportError`
+(pytesseract, PIL, fitz, ...), **sin romper** si faltan.
+
+- **Si hay motor disponible:** `extract_text_via_ocr(path)` ejecuta el OCR y
+  devuelve `(texto, '[OCR-EXTRACTED]')`; el documento se re-mide por texto util
+  y `enrich_document` lo etiqueta `[OCR-EXTRACTED]` con el metodo de ingesta OCR.
+- **Si NO hay motor (este entorno):** degrada de forma **honesta**: devuelve
+  `('', '[EPISTEMIC-VOID]')`, **nunca fabrica texto**, mantiene el texto nativo
+  sin cambios (salida byte-identica) y registra el metodo 'OCR pendiente (motor
+  no disponible en este entorno)'. La capacidad OCR queda **lista y probada**
+  (incluida la ruta 'con motor' via un stub/fake en las pruebas), aunque no se
+  ejecute un binario real aqui.
+
+La capacidad se sondea **una sola vez por corrida** (en `enrich_corpus`) y se
+reutiliza en todos los documentos, de modo que el pipeline sigue siendo
+determinista.
+
+### Anexo A - Trazabilidad de requisitos (dinamico y reutilizable)
+
+`phases/requirements_traceability.py` genera, durante `--phase all`, el **Anexo
+A** del informe tecnico bajo
+`advisory-credi10-2.0/3-informe-tecnico/anexo-a-trazabilidad-requisitos/`. El
+anexo responde **punto a punto** cada solicitud del cliente presente en el
+corpus y contiene **dos** artefactos:
+
+1. un **checklist marcable** de que desarrollar (`- [x]` Cubierto / `- [~]`
+   Parcial / `- [ ]` Pendiente), y
+2. una **tabla de trazabilidad** con columnas exactas `ID | Solicitud del
+   cliente | Cita al documento fuente | Donde se responde (fase/seccion/
+   entregable) | Estado | Evidencia/Nota`.
+
+Es **dinamico** (no hardcodeado para Credi10): `extract_requirements()` prioriza
+el documento tipo RFP por heuristica de rol/nombre y complementa con el resto;
+localiza **anclas de seccion** portadoras de requisitos (objetivos, alcance,
+requisitos, informes, evaluacion, indicadores de retorno) con una normalizacion
+sin espacios/acentos robusta a la fragmentacion del PDF, y como respaldo generico
+detecta numerales/vinetas. Cada solicitud recibe un **ID estable** `REQ-NNN`, una
+**cita** a su documento (y seccion cuando es recuperable) y un **Estado** honesto
+derivado de las senales de texto util / OCR de la Base de Conocimiento
+(**Pendiente + [EPISTEMIC-VOID]** cuando el documento fuente no tiene texto
+util). Con el corpus de **otro cliente** el anexo se **regenera** con sus
+solicitudes. El generador es llamable directamente con una `KnowledgeBase` o una
+lista de `Document`, lo que lo hace comprobable sobre un corpus sintetico.
 
 ## Universo de modulos como fuente unica de verdad (`phases/modules.py`)
 
@@ -242,10 +327,14 @@ disponibles). La extraccion de texto se hace con un enfoque **`zlib` + regex**:
 se localizan los streams `FlateDecode` del PDF, se **descomprimen con `zlib`** y
 se extrae el texto entre parentesis de los operadores `Tj`/`TJ`, limpiando
 fragmentacion de caracteres y etiquetas de idioma. Los **diagramas PNG** son
-imagenes binarias (no se hace OCR): se registran como evidencia (sha256, tamanio)
-y su contenido se transcribe en el conocimiento de los roles/corpus. La mayoria
-de los PDFs de proceso son ricos en imagenes con poco texto limpio extraible y se
-tratan como evidencia secundaria de soporte.
+imagenes binarias: se registran como evidencia (sha256, tamanio) y su contenido
+se transcribe en el conocimiento de los roles/corpus. La mayoria de los PDFs de
+proceso son ricos en imagenes con poco **texto util real** extraible; el motor
+los reclasifica honestamente por texto util (no por tamanio crudo) y expone una
+capacidad **OCR** lista (`engine/ocr.py`) que se ejecuta **si** hay motor
+disponible y degrada de forma honesta cuando no lo hay (ver 'Capacidad OCR' mas
+arriba). En este entorno no hay motor OCR, por lo que esos PDF quedan 'OCR
+pendiente' / `[EPISTEMIC-VOID]` sin fabricar texto.
 
 ## Estructura del directorio
 
@@ -255,7 +344,8 @@ advisory-system/
 ├── README.md              # este documento
 ├── engine/                # nucleo del motor
 │   ├── corpus.py          # CorpusLoader: descubre PDFs/PNGs y extrae texto (zlib+regex)
-│   ├── knowledge.py       # KnowledgeBase determinista (indice + resumenes + hechos + checklist)
+│   ├── knowledge.py       # KnowledgeBase determinista (indice + resumenes + hechos + checklist; banda por texto util real)
+│   ├── ocr.py             # adaptador OCR (sondeo de capacidad + extraccion con degradacion honesta)
 │   ├── skills.py          # SkillsLoader: carga .kiro/skills y parsea el catalogo de IA
 │   ├── model.py           # Role, Phase, Gate, RACI-V, GoldenThread (Hilo Dorado)
 │   ├── phases.py          # catalogo declarativo de fases + gates + builders + catalogo 04b
@@ -272,6 +362,7 @@ advisory-system/
 │   ├── commercial_proposal.py  # informe 1: propuesta comercial (Kulgops)
 │   ├── executive_report.py     # informe 2: reporte gerencial ejecutivo
 │   ├── technical_report.py     # informe 3: informe tecnico multinivel narrativo
+│   ├── requirements_traceability.py  # Anexo A: trazabilidad de requisitos dinamica (checklist + tabla)
 │   └── phase0.py .. phase6.py  # contenido fundamentado en el corpus por fase
 └── tests/                 # pruebas unittest (stdlib)
     └── test_engine.py

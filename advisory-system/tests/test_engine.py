@@ -1797,5 +1797,241 @@ class TestMasterReadmeLinksThreeReports(unittest.TestCase):
                       "el README debe explicar la reutilizacion con --corpus")
 
 
+class TestOCRAdapter(unittest.TestCase):
+    """FEAT-001/003: OCR capability probe + honest degradation + stub 'with
+    engine' path. Proves [OCR-EXTRACTED] tagging WITHOUT depending on a real
+    binary (this environment has no OCR engine)."""
+
+    def test_detect_capability_unavailable_without_raising(self):
+        from engine.ocr import detect_ocr_capability, OCRCapability
+        cap = detect_ocr_capability()
+        self.assertIsInstance(cap, OCRCapability)
+        # No OCR engine is present in this environment.
+        self.assertFalse(cap.available, "no debe haber motor OCR en este entorno")
+        self.assertIsNone(cap.engine)
+        self.assertTrue(cap.reason, "debe reportar una razon honesta")
+        # The probe reports what was looked for (modules and binaries).
+        self.assertTrue(cap.probed, "debe reportar lo sondeado")
+        self.assertIn("binary:tesseract", cap.probed)
+        self.assertIn("module:pytesseract", cap.probed)
+        # In this environment everything is missing.
+        self.assertFalse(cap.probed["binary:tesseract"])
+        self.assertFalse(cap.probed["module:pytesseract"])
+
+    def test_extract_degrades_to_epistemic_void_without_engine(self):
+        from engine.ocr import extract_text_via_ocr, EPISTEMIC_VOID
+        text, tag = extract_text_via_ocr("/nonexistent/scan.pdf")
+        self.assertEqual(text, "", "sin motor no se recupera (ni fabrica) texto")
+        self.assertEqual(tag, EPISTEMIC_VOID)
+
+    def test_extract_with_stub_engine_tags_ocr_extracted(self):
+        # Inject a fake capability (available=True) and monkeypatch the engine
+        # dispatcher to return fake text, proving the [OCR-EXTRACTED] path works
+        # without any real binary.
+        from engine import ocr
+        from engine.ocr import (
+            extract_text_via_ocr, OCRCapability, OCR_EXTRACTED,
+        )
+        fake_text = "Texto recuperado por OCR falso para la prueba."
+        original_run = ocr._run_engine
+        try:
+            ocr._run_engine = lambda engine, path: fake_text  # type: ignore
+            cap = OCRCapability(available=True, engine="pytesseract",
+                                reason="stub", probed={})
+            text, tag = extract_text_via_ocr("/any/scan.pdf", cap)
+            self.assertEqual(text, fake_text)
+            self.assertEqual(tag, OCR_EXTRACTED)
+        finally:
+            ocr._run_engine = original_run  # type: ignore
+
+    def test_enrich_document_tags_ocr_extracted_with_stub(self):
+        # A low-useful-text PDF enriched WITH a stub OCR engine must be tagged
+        # [OCR-EXTRACTED] and carry an OCR ingestion method.
+        from engine import ocr
+        from engine.corpus import Document
+        from engine.knowledge import enrich_document, OCR_EXTRACTED
+        from engine.ocr import OCRCapability
+        fake_text = (
+            "Credi10 requiere integrar Siesa con CrossCore y Datacredito "
+            "mediante APIs REST, con observabilidad y trazabilidad completas "
+            "para la originacion, el recaudo y la cobranza del negocio."
+        )
+        doc = Document(
+            id="scan_doc", filename="scan_doc.pdf", kind="pdf",
+            role="secondary", path="/any/scan_doc.pdf",
+            size=100000, sha256="deadbeef",
+            extracted_text="a b c d e",  # garbage, ~0 useful text -> triggers OCR
+        )
+        original_run = ocr._run_engine
+        try:
+            ocr._run_engine = lambda engine, path: fake_text  # type: ignore
+            cap = OCRCapability(available=True, engine="pytesseract",
+                                reason="stub", probed={})
+            enrich_document(doc, cap)
+            self.assertEqual(doc.epistemic_flag, OCR_EXTRACTED,
+                             "el PDF de baja cobertura con motor OCR debe "
+                             "quedar [OCR-EXTRACTED]")
+            self.assertIn("OCR", doc.ingestion_method)
+            self.assertEqual(doc.extracted_text, fake_text,
+                             "el texto OCR debe reemplazar la capa pobre")
+        finally:
+            ocr._run_engine = original_run  # type: ignore
+
+    def test_enrich_document_without_engine_keeps_native_text(self):
+        # Honest degradation: no engine -> native (poor) text is kept unchanged
+        # and the method becomes 'OCR pendiente'; nothing is fabricated.
+        from engine.corpus import Document
+        from engine.knowledge import enrich_document, EPISTEMIC_VOID
+        from engine.ocr import detect_ocr_capability
+        doc = Document(
+            id="scan2", filename="scan2.pdf", kind="pdf", role="secondary",
+            path="/any/scan2.pdf", size=100000, sha256="cafebabe",
+            extracted_text="a b c d e",
+        )
+        enrich_document(doc, detect_ocr_capability())
+        self.assertEqual(doc.extracted_text, "a b c d e",
+                         "sin motor OCR el texto nativo no cambia")
+        self.assertEqual(doc.epistemic_flag, EPISTEMIC_VOID)
+        self.assertIn("OCR pendiente", doc.ingestion_method)
+
+
+class TestUsefulTextMetric(unittest.TestCase):
+    """FEAT-001/003: coverage reclassification by REAL useful text."""
+
+    def test_useful_text_helpers_behaviour(self):
+        from engine.knowledge import (
+            count_useful_chars, useful_text_ratio, useful_text_band,
+        )
+        prose = ("La arquitectura objetivo propone microservicios desacoplados "
+                 "con contratos OpenAPI para las integraciones del negocio.")
+        garbage = "a b c d e f g h i j k l m n o p q r s t u v w x y z"
+        prose_useful = count_useful_chars(prose)
+        garbage_useful = count_useful_chars(garbage)
+        self.assertGreater(prose_useful, 0)
+        self.assertEqual(garbage_useful, 0,
+                         "fragmentos de una sola letra no cuentan como texto util")
+        # Ratio: high for prose, ~0 for garbage.
+        prose_ratio = useful_text_ratio(prose_useful, len(prose))
+        garbage_ratio = useful_text_ratio(garbage_useful, len(garbage))
+        self.assertGreater(prose_ratio, 0.6)
+        self.assertEqual(garbage_ratio, 0.0)
+        # Band: prose high band, garbage nula.
+        self.assertEqual(useful_text_band(prose_ratio, prose_useful), "alta")
+        self.assertEqual(useful_text_band(garbage_ratio, garbage_useful), "nula")
+
+    def test_known_image_only_pdfs_not_banded_alta(self):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase, EPISTEMIC_VOID
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        # No PDF may be banded 'alta' (they are all image/scan PDFs).
+        for d in kb.documents:
+            if d.kind == "pdf":
+                self.assertNotEqual(
+                    d.coverage_band, "alta",
+                    f"{d.filename}: un PDF de imagen no debe quedar 'alta'")
+        # The worst image/scan PDFs must be 'nula' + [EPISTEMIC-VOID].
+        expected_void = [
+            "WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+            "Api Integrador Atencion al cliente.pdf",
+            "Originacion_API_Inspektor.pdf",
+            "ProcesoCorteCartera.pdf",
+        ]
+        for name in expected_void:
+            doc = kb.by_filename(name)
+            self.assertIsNotNone(doc, f"{name} debe existir en el corpus")
+            self.assertEqual(doc.coverage_band, "nula", name)
+            self.assertEqual(doc.epistemic_flag, EPISTEMIC_VOID, name)
+
+
+class TestRequirementsTraceabilityAnnex(unittest.TestCase):
+    """FEAT-002/003: annex structure on disk + dynamic (non-Credi10) extraction."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        cls.annex = os.path.join(
+            cls.out_dir, "3-informe-tecnico",
+            "anexo-a-trazabilidad-requisitos", "README.md")
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        with open(cls.annex, encoding="utf-8") as fh:
+            cls.content = fh.read()
+        with open(os.path.join(cls.out_dir, "3-informe-tecnico", "README.md"),
+                  encoding="utf-8") as fh:
+            cls.tech_readme = fh.read()
+
+    def test_annex_file_exists(self):
+        self.assertTrue(os.path.isfile(self.annex),
+                        "el anexo de trazabilidad debe existir tras --phase all")
+
+    def test_annex_has_markable_checklist_symbols(self):
+        # At least one checklist symbol must be present; all three symbols are
+        # legal markable states.
+        has_any = any(sym in self.content
+                      for sym in ("- [x]", "- [~]", "- [ ]"))
+        self.assertTrue(has_any, "el anexo debe tener un checklist marcable")
+
+    def test_annex_has_traceability_table_exact_columns(self):
+        header = ("| ID | Solicitud del cliente | Cita al documento fuente | "
+                  "Donde se responde (fase/seccion/entregable) | Estado | "
+                  "Evidencia/Nota |")
+        self.assertIn(header, self.content,
+                      "la tabla debe tener las columnas exactas requeridas")
+        # Explicit column-presence assertions (per acceptance criteria).
+        for col in ("Cita al documento fuente",
+                    "Donde se responde (fase/seccion/entregable)",
+                    "Estado", "Evidencia/Nota"):
+            self.assertIn(col, self.content, col)
+
+    def test_tech_report_readme_links_annex(self):
+        self.assertIn(
+            "anexo-a-trazabilidad-requisitos/README.md", self.tech_readme,
+            "el README del informe tecnico debe enlazar el anexo")
+
+    def test_extraction_is_dynamic_over_synthetic_corpus(self):
+        # Build a SMALL synthetic corpus distinct from Credi10 and assert the
+        # generator yields THAT corpus's requests (proves not hardcoded).
+        from engine.corpus import Document
+        from engine.knowledge import enrich_corpus
+        from phases import requirements_traceability as rt
+        distinctive = (
+            "1. El sistema de la Biblioteca Municipal Zunflandia debe permitir "
+            "el prestamo de libros con reserva en linea y notificaciones. "
+            "2. El catalogo debe integrarse con el portal ciudadano de "
+            "Zunflandia mediante un API de consulta."
+        )
+        synth = [
+            Document(
+                id="rfp_zunflandia", filename="RFP_Zunflandia.pdf", kind="pdf",
+                role="primary", path="/synthetic/RFP_Zunflandia.pdf",
+                size=len(distinctive) * 4, sha256="0" * 64,
+                extracted_text=distinctive,
+            ),
+        ]
+        enriched = enrich_corpus(synth)
+        reqs = rt.extract_requirements(enriched)
+        self.assertTrue(reqs, "debe derivar solicitudes del corpus sintetico")
+        blob = " ".join(r.request for r in reqs).lower()
+        self.assertIn("zunflandia", blob,
+                      "las solicitudes deben ser las del corpus sintetico")
+        # And must NOT be the Credi10 ones.
+        self.assertNotIn("credi10", blob)
+        # Every request cites the synthetic source document.
+        for r in reqs:
+            self.assertEqual(r.source_filename, "RFP_Zunflandia.pdf")
+        # The rendered annex over the synthetic corpus carries both artifacts
+        # and the exact table header.
+        readme = rt.build_annex_readme(reqs, total_docs=len(enriched))
+        self.assertIn("| ID | Solicitud del cliente | Cita al documento fuente",
+                      readme)
+        self.assertTrue(
+            any(sym in readme for sym in ("- [x]", "- [~]", "- [ ]")))
+
+
 if __name__ == "__main__":
     unittest.main()
