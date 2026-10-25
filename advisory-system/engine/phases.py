@@ -46,6 +46,13 @@ PROPOSAL_FILENAME = "1-propuesta-comercial.md"
 # ``phases/executive_report.py``.
 EXEC_REPORT_FILENAME = "2-reporte-gerencial.md"
 
+# Technical report (report 3, task three-reports): the multilevel narrative
+# technical report, written by the orchestrator on `--phase all` as a tree under
+# ``advisory-credi10-2.0/3-informe-tecnico/`` (one subfolder per Zero-Drift
+# phase + a master README index). Not a stage-gated phase; its generator lives
+# in ``phases/technical_report.py``.
+TECH_REPORT_DIRNAME = "3-informe-tecnico"
+
 
 def _gates() -> Dict[str, Gate]:
     return {

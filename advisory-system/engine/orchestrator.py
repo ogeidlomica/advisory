@@ -24,6 +24,7 @@ from engine.phases import (
     EXEC_REPORT_FILENAME,
     PHASE_ORDER,
     PROPOSAL_FILENAME,
+    TECH_REPORT_DIRNAME,
     load_phases,
 )
 from phases import build_readme
@@ -31,6 +32,7 @@ from phases import catalog as catalog_mod
 from phases import commercial_proposal as proposal_mod
 from phases import dossier as dossier_mod
 from phases import executive_report as exec_report_mod
+from phases import technical_report as tech_report_mod
 from phases.builders import BuildContext
 
 import roles as roles_pkg
@@ -57,6 +59,8 @@ class RunSummary:
     dossier_file_count: int = 0
     proposal_path: Optional[str] = None
     exec_report_path: Optional[str] = None
+    tech_report_dir: Optional[str] = None
+    tech_report_file_count: int = 0
 
     def log_lines(self) -> List[str]:
         out = []
@@ -80,6 +84,11 @@ class RunSummary:
             out.append(f"[Propuesta Comercial] -> {self.proposal_path}")
         if self.exec_report_path:
             out.append(f"[Reporte Gerencial] -> {self.exec_report_path}")
+        if self.tech_report_dir:
+            out.append(
+                f"[Informe Tecnico] {self.tech_report_file_count} archivos -> "
+                f"{self.tech_report_dir}"
+            )
         if self.readme_path:
             out.append(f"[README index] -> {self.readme_path}")
         return out
@@ -131,6 +140,13 @@ class AdvisoryOrchestrator:
             # proposal, written deterministically from the engine's sources of
             # truth (phase1/phase3/dossier/KB).
             summary.exec_report_path = self._write_executive_report()
+            # Technical report (report 3): the multilevel narrative technical
+            # report tree (one subfolder per phase + master README), written
+            # deterministically from the phase builders + KB. Runs after the
+            # dossier so its index can reference the TO-BE execution view.
+            tech_dir, tech_count = self._write_technical_report()
+            summary.tech_report_dir = tech_dir
+            summary.tech_report_file_count = tech_count
             summary.readme_path = self._write_readme()
         else:
             if phase not in self.phases:
@@ -247,6 +263,18 @@ class AdvisoryOrchestrator:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(body)
         return path
+
+    def _write_technical_report(self):
+        """Write the multilevel technical report tree and return (dir, count)."""
+        paths = tech_report_mod.write(
+            self.out_dir,
+            knowledge_base=self.knowledge_base,
+            roles=self.roles,
+            documents=self.corpus.documents,
+            thread=self.thread,
+        )
+        tech_dir = os.path.join(self.out_dir, tech_report_mod.TECH_REPORT_DIRNAME)
+        return tech_dir, len(paths)
 
     def _write_readme(self) -> str:
         body = build_readme(self.phases, self.roles, self.corpus.documents)

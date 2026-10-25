@@ -118,11 +118,14 @@ El informe tecnico esta DONE solo si:
 
 ## 9. Implementacion de referencia
 
-El motor stdlib (en `advisory-system/phases/`) implementa esta politica
-reescribiendo la presentacion del informe tecnico a la estructura multinivel y
-reutilizando los builders por fase, el catalogo de modulos/historias
-(`phases/modules.py`), el dossier (`phases/dossier.py`) y la Base de
-Conocimiento. Las celulas (Discovery, Diseno, Valor y Habilitacion) son los
-roles productores naturales del informe tecnico, con AM como verificador de
-calidad. Para Credi10 2.0 el informe tecnico se publica bajo
-`advisory-credi10-2.0/`.
+El motor stdlib en `advisory-system/phases/technical_report.py` implementa esta
+politica: escribe el arbol `3-informe-tecnico/` (README maestro + una subcarpeta
+por fase con su README indice + varios archivos de tema) de forma determinista
+durante `--phase all`, reutilizando los builders por fase (`phases/phase0..6`),
+el catalogo de modulos/historias (`phases/modules.py`), el dossier
+(`phases/dossier.py`) y la Base de Conocimiento, y enriqueciendo cada tema con
+narrativa de analisis (implicaciones para estimacion, estrategia y riesgos). Las
+celulas (Discovery, Diseno, Valor y Habilitacion) son los roles productores
+naturales del informe tecnico, con AM como verificador de calidad. Para Credi10
+2.0 el informe tecnico se publica bajo
+`advisory-credi10-2.0/3-informe-tecnico/`.

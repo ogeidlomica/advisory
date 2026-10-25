@@ -45,10 +45,25 @@ La ingesta del corpus es **completa y verificable** (nada de muestreo parcial) y
 
 ## Informes del engagement (familia de 3)
 
-Ademas de los informes por fase, el motor genera un conjunto de **informes del engagement** orientados a distintas audiencias, enlazados desde este indice maestro:
+El motor genera **tres informes separados**, orientados a distintas audiencias y enlazados desde este indice maestro. Cada uno tiene un proposito y un tono propios, pero comparten las mismas fuentes de verdad (corpus, Base de Conocimiento y builders por fase):
 
-- [`1-propuesta-comercial.md`](1-propuesta-comercial.md): **Propuesta comercial** emitida por Kulgops (documento de venta con las 11 secciones a-k; perfil corporativo e inversion marcados [DOC-ASSUMPTION]).
-- [`2-reporte-gerencial.md`](2-reporte-gerencial.md): **Reporte gerencial** (soporte ejecutivo de la propuesta: alcance, fases, diagnostico de alto nivel, estrategia, riesgos, consideraciones y prerrequisitos; tono gerencial, no tecnico).
+1. [`1-propuesta-comercial.md`](1-propuesta-comercial.md): **Propuesta comercial** emitida por Kulgops. Documento de **venta** con las 11 secciones a-k (quienes somos, alcance, contexto de negocio, metodologia, entregables, estrategia, equipo, cronograma, supuestos y restricciones, inversion y terminos). El perfil corporativo de Kulgops y la inversion se marcan [DOC-ASSUMPTION]. Proposito: ganar el engagement.
+2. [`2-reporte-gerencial.md`](2-reporte-gerencial.md): **Reporte gerencial**, soporte ejecutivo de la propuesta (alcance, fases, diagnostico de alto nivel, estrategia, riesgos, consideraciones y prerrequisitos). Tono **gerencial**, no tecnico. Proposito: dar al comite la lectura de negocio para decidir.
+3. [`3-informe-tecnico/README.md`](3-informe-tecnico/README.md): **Informe tecnico** en **estructura multinivel narrativa**. Es el **detalle** que sustenta los otros dos y habilita una estimacion lo mas acertada posible. Proposito: dar al equipo tecnico la profundidad para diseñar y estimar.
+
+### Estructura multinivel del informe tecnico
+
+El informe tecnico se desagrega a ~3 niveles para que sea facil de leer y navegar, con **narrativa de analisis** ademas de tablas y diagramas:
+
+- **Nivel 1 = fase.** Una subcarpeta por cada una de las 7 fases Zero-Drift bajo [`3-informe-tecnico/`](3-informe-tecnico/README.md) (fase-0-higiene-epistemica/ ... fase-6-caso-de-negocio/), cada una con su README indice.
+- **Nivel 2 = tema.** Varios archivos de tema dentro de cada fase (p. ej. en Fase 4: arquitectura C4, ADRs, modelo de datos y contratos, catalogo de IA, UX y pruebas).
+- **Nivel 3 = subtema.** Jerarquia interna H1 -> H2 -> H3 en cada archivo, con interpretacion de hallazgos e implicaciones para la estimacion, la estrategia de implementacion y los riesgos.
+
+El informe tecnico **integra el dossier TO-BE** (`to-be/`) por referencia como la **vista de ejecucion** del mismo diseño (ver su README). Los informes planos por fase (00..06 + 04b) siguen siendo la **vista compacta canonica** de cada fase (gobernada por los gates QG); el informe tecnico es la vista navegable que los reorganiza y enriquece con narrativa.
+
+### Politicas (skills) que gobiernan los 3 informes
+
+Cada informe esta gobernado por un **skill-politica declarativo** (generico y reutilizable, en `.kiro/skills/`): `commercial-proposal-report` (propuesta comercial), `executive-management-report` (reporte gerencial) y `technical-narrative-multilevel` (informe tecnico multinivel). El dossier de ejecucion lo gobierna `sdlc-project-dossier`.
 
 ## Dossier de proyecto TO-BE (por etapa del SDLC)
 
@@ -111,9 +126,14 @@ flowchart LR
 
 ## Como regenerar
 
-- Todo el pipeline (7 informes + este indice): `python3 advisory-system/quickstart.py --phase all`
+- Todo el pipeline (7 informes por fase + catalogo + dossier TO-BE + los 3 informes del engagement + este indice): `python3 advisory-system/quickstart.py --phase all`
 - Una sola fase (ej. Fase 3): `python3 advisory-system/quickstart.py --phase 3`
 - Opciones: `--corpus <ruta>` para otro corpus, `--out <ruta>` para otra carpeta de salida.
+- La regeneracion es **determinista**: una segunda corrida de `--phase all` deja `git status --short` vacio (sin aleatoriedad ni timestamps).
+
+## Reutilizar con otro cliente
+
+Las politicas (skills) son **a nivel de organizacion**, no especificas de Credi10. Para aplicar el mismo advisory (y los 3 informes) a otro cliente: (1) coloca el nuevo corpus en una carpeta y apunta el motor con `--corpus /ruta/al/corpus` (y opcionalmente `--out /ruta/salida`); (2) las politicas genericas en `.kiro/skills/` se aplican tal cual (ingesta completa, propuesta comercial, reporte gerencial e informe tecnico multinivel) sin edicion por cliente; (3) lo unico especifico del cliente es el contenido fundamentado en su corpus y el universo de modulos (`advisory-system/phases/modules.py`).
 
 La documentacion del motor (estrategia, arquitectura y pruebas) esta en [`advisory-system/README.md`](../advisory-system/README.md).
 

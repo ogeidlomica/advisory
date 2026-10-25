@@ -71,6 +71,16 @@ del cliente, pensadas para reutilizarse en otros contextos/corpus:
   **dossier con una subcarpeta por etapa del SDLC** mas registros transversales
   (ambiguedades/riesgos/consideraciones/restricciones/prerrequisitos) en todos
   los niveles arquitectonicos, generado de forma determinista.
+- **`commercial-proposal-report`** - politica del **informe 1** (propuesta
+  comercial): documento de venta con las 11 secciones a-k, perfil corporativo e
+  inversion marcados [DOC-ASSUMPTION].
+- **`executive-management-report`** - politica del **informe 2** (reporte
+  gerencial): soporte ejecutivo de la propuesta (alcance, fases, diagnostico,
+  estrategia, riesgos, consideraciones, prerrequisitos) en tono gerencial.
+- **`technical-narrative-multilevel`** - politica del **informe 3** (informe
+  tecnico): estructura **multinivel** (fase -> tema -> subtema), con narrativa
+  de analisis sustancial (no solo tablas/Mermaid) orientada a una estimacion lo
+  mas acertada posible.
 
 El motor las carga con `engine/skills.py` (`SkillsLoader`): descubre los
 `SKILL.md`, parsea el frontmatter y convierte el catalogo de IA en entradas
@@ -161,6 +171,52 @@ es el skill `sdlc-project-dossier` en `.kiro/skills/` (generica y agnostica del
 cliente). La regeneracion es **determinista**: una segunda corrida de
 `--phase all` deja `git status --short` vacio.
 
+## Los tres informes del engagement (familia de 3)
+
+Ademas de los informes por fase y del dossier, `--phase all` genera **tres
+informes separados** en `../advisory-credi10-2.0/`, cada uno con su proposito,
+audiencia y skill-politica:
+
+1. **Propuesta comercial** (`1-propuesta-comercial.md`, skill
+   `commercial-proposal-report`): documento de **venta** emitido por Kulgops con
+   las 11 secciones a-k (quienes somos, alcance, contexto de negocio,
+   metodologia, entregables, estrategia, equipo, cronograma, supuestos y
+   restricciones, inversion y terminos). Perfil de Kulgops e inversion marcados
+   [DOC-ASSUMPTION].
+2. **Reporte gerencial** (`2-reporte-gerencial.md`, skill
+   `executive-management-report`): soporte **ejecutivo** de la propuesta
+   (alcance, fases, diagnostico de alto nivel, estrategia, riesgos,
+   consideraciones y prerrequisitos) en tono gerencial, no tecnico.
+3. **Informe tecnico** (`3-informe-tecnico/`, skill
+   `technical-narrative-multilevel`): el **detalle** que sustenta a los otros
+   dos y habilita la estimacion.
+
+### Estructura multinivel del informe tecnico (`3-informe-tecnico/`)
+
+`phases/technical_report.py` genera, de forma **determinista**, el informe
+tecnico como una **vista multinivel narrativa**:
+
+- **Nivel 1 = fase.** Una subcarpeta por cada una de las 7 fases Zero-Drift
+  (`fase-0-higiene-epistemica/` ... `fase-6-caso-de-negocio/`), cada una con un
+  `README.md` indice y su hilo narrativo.
+- **Nivel 2 = tema.** Varios archivos de tema por fase (p. ej. en la Fase 4:
+  `arquitectura-c4.md`, `adrs.md`, `modelo-datos-y-contratos.md`,
+  `catalogo-ia.md`, `ux-y-pruebas.md`).
+- **Nivel 3 = subtema.** Jerarquia interna H1 -> H2 -> H3 en cada archivo.
+
+La **regla de calidad clave** (lo que el usuario mas pide) es que cada archivo
+lleva **narrativa/analisis sustancial en prosa** ademas de tablas y Mermaid:
+interpreta los hallazgos y explica sus implicaciones para la **estimacion**, la
+**estrategia de implementacion** y los **riesgos**. El informe reutiliza (no
+duplica) los builders por fase y **re-itera todas las fases** enriqueciendolas.
+
+El informe tecnico **integra el dossier TO-BE** por referencia inequivoca como
+su **vista de ejecucion** (el `README.md` maestro enlaza `../to-be/README.md`).
+Los informes planos por fase (`00..06` + `04b`) se **conservan** como la vista
+compacta canonica de cada fase (gobernada por los gates QG-0..QG-6); el informe
+tecnico es la vista navegable que los reorganiza y enriquece. El `README.md`
+maestro de `../advisory-credi10-2.0/` enlaza los tres informes.
+
 ## Reutilizar las politicas con otro corpus/cliente
 
 Las skills y la Base de Conocimiento son **a nivel de organizacion**, no
@@ -213,6 +269,9 @@ advisory-system/
 │   ├── modules.py         # UNICA fuente de verdad del universo de modulos (MOD-01..MOD-17)
 │   ├── catalog.py         # render de 04b-catalogo-historias.md (HU/Gherkin exhaustivo)
 │   ├── dossier.py         # dossier TO-BE por etapa del SDLC + registros transversales
+│   ├── commercial_proposal.py  # informe 1: propuesta comercial (Kulgops)
+│   ├── executive_report.py     # informe 2: reporte gerencial ejecutivo
+│   ├── technical_report.py     # informe 3: informe tecnico multinivel narrativo
 │   └── phase0.py .. phase6.py  # contenido fundamentado en el corpus por fase
 └── tests/                 # pruebas unittest (stdlib)
     └── test_engine.py

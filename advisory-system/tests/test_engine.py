@@ -1526,5 +1526,267 @@ class TestToBeDossier(unittest.TestCase):
                       "el README debe enlazar el dossier (to-be/README.md)")
 
 
+def _count_headings(content):
+    """Count H1/H2/H3 lines, ignoring fenced code blocks (``` ... ```)."""
+    in_fence = False
+    h1 = h2 = h3 = 0
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if line.startswith("### "):
+            h3 += 1
+        elif line.startswith("## "):
+            h2 += 1
+        elif line.startswith("# "):
+            h1 += 1
+    return h1, h2, h3
+
+
+def _prose_word_count(content):
+    """Count words that live in prose paragraphs (not tables/code/headings)."""
+    in_fence = False
+    words = 0
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if (not stripped or stripped.startswith("|")
+                or stripped.startswith("#")):
+            continue
+        words += len(stripped.split())
+    return words
+
+
+class TestTechnicalReport(unittest.TestCase):
+    """task three-reports / FEAT-004: multilevel narrative technical report.
+
+    After `--phase all` the technical report must exist on disk as a tree under
+    advisory-credi10-2.0/3-informe-tecnico/ with one subfolder per Zero-Drift
+    phase, several theme files per phase, each with H1/H2/H3 hierarchy and
+    substantial prose narrative in addition to tables/Mermaid. The TO-BE dossier
+    must be integrated/linked coherently and the master index must link the 3
+    engagement reports.
+    """
+
+    TECH_DIRNAME = "3-informe-tecnico"
+    PHASE_SLUGS = [
+        "fase-0-higiene-epistemica",
+        "fase-1-contexto-as-is",
+        "fase-2-estado-del-arte",
+        "fase-3-gaps-y-viabilizacion",
+        "fase-4-diseno-to-be",
+        "fase-5-roadmap-estimacion-raid",
+        "fase-6-caso-de-negocio",
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        cls.base = os.path.join(cls.out_dir, cls.TECH_DIRNAME)
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        with open(os.path.join(cls.base, "README.md"), encoding="utf-8") as fh:
+            cls.master_readme = fh.read()
+
+    # -- 1. tree: subfolder per phase + master README ----------------------- #
+    def test_tree_has_readme_and_seven_phase_subfolders(self):
+        self.assertTrue(os.path.isdir(self.base),
+                        "la carpeta 3-informe-tecnico/ debe existir")
+        self.assertTrue(
+            os.path.isfile(os.path.join(self.base, "README.md")),
+            "el informe tecnico debe tener un README.md maestro")
+        for slug in self.PHASE_SLUGS:
+            sub = os.path.join(self.base, slug)
+            self.assertTrue(os.path.isdir(sub),
+                            f"debe existir la subcarpeta de fase {slug}/")
+
+    # -- 2. several theme files per phase ----------------------------------- #
+    def test_each_phase_has_multiple_theme_files(self):
+        for slug in self.PHASE_SLUGS:
+            sub = os.path.join(self.base, slug)
+            mds = sorted(f for f in os.listdir(sub) if f.endswith(".md"))
+            # README.md + at least 2 theme files => >= 3 markdown files, and at
+            # least 2 non-README theme files per phase (nivel 2).
+            themes = [f for f in mds if f != "README.md"]
+            self.assertGreaterEqual(
+                len(themes), 2,
+                f"{slug}/ debe tener varios archivos de tema (nivel 2)")
+
+    # -- 3. H1/H2/H3 hierarchy + table + epistemic tag per theme ------------ #
+    def test_theme_files_have_three_level_hierarchy(self):
+        for slug in self.PHASE_SLUGS:
+            sub = os.path.join(self.base, slug)
+            for fname in os.listdir(sub):
+                if not fname.endswith(".md") or fname == "README.md":
+                    continue
+                with open(os.path.join(sub, fname), encoding="utf-8") as fh:
+                    content = fh.read()
+                h1, h2, h3 = _count_headings(content)
+                where = f"{slug}/{fname}"
+                self.assertGreaterEqual(h1, 1, f"{where} debe tener un H1")
+                self.assertGreaterEqual(h2, 1, f"{where} debe tener H2")
+                self.assertGreaterEqual(
+                    h3, 1, f"{where} debe tener H3 (>=3 niveles)")
+                self.assertTrue(
+                    any(l.lstrip().startswith("|")
+                        for l in content.splitlines()),
+                    f"{where} debe incluir al menos una tabla markdown")
+                self.assertTrue(
+                    any(tag in content for tag in _EPISTEMIC_TAGS),
+                    f"{where} debe incluir al menos una etiqueta epistemica")
+
+    # -- 4. substantial narrative prose, not just tables/Mermaid ------------ #
+    def test_theme_files_have_substantial_prose(self):
+        for slug in self.PHASE_SLUGS:
+            sub = os.path.join(self.base, slug)
+            for fname in os.listdir(sub):
+                if not fname.endswith(".md") or fname == "README.md":
+                    continue
+                with open(os.path.join(sub, fname), encoding="utf-8") as fh:
+                    content = fh.read()
+                words = _prose_word_count(content)
+                self.assertGreaterEqual(
+                    words, 200,
+                    f"{slug}/{fname} debe tener narrativa sustancial en prosa "
+                    f"(>=200 palabras fuera de tablas/codigo), tiene {words}")
+                # The mandatory analysis sections must be present.
+                for section in ("Implicaciones para la estimacion",
+                                "Implicaciones para la estrategia de "
+                                "implementacion",
+                                "Riesgos e incertidumbre"):
+                    self.assertIn(
+                        section, content,
+                        f"{slug}/{fname} debe incluir la seccion '{section}'")
+
+    # -- 5. master README: storytelling + Mermaid + phase links ------------- #
+    def test_master_readme_has_storytelling_and_structure(self):
+        self.assertTrue(self.master_readme.strip())
+        self.assertIn("```mermaid", self.master_readme,
+                      "el README maestro debe incluir Mermaid")
+        self.assertTrue(
+            ("storytelling" in self.master_readme.lower())
+            or ("hilo narrativo" in self.master_readme.lower()),
+            "el README maestro debe incluir el hilo narrativo/storytelling")
+        for slug in self.PHASE_SLUGS:
+            self.assertIn(f"{slug}/README.md", self.master_readme,
+                          f"el README maestro debe enlazar la fase {slug}")
+
+    # -- 6. the TO-BE dossier is integrated/linked coherently --------------- #
+    def test_master_readme_integrates_dossier(self):
+        self.assertIn("../to-be/README.md", self.master_readme,
+                      "el informe tecnico debe integrar/enlazar el dossier "
+                      "TO-BE de forma inequivoca")
+
+    # -- 7. phase index READMEs link their themes --------------------------- #
+    def test_phase_readmes_link_themes(self):
+        for slug in self.PHASE_SLUGS:
+            path = os.path.join(self.base, slug, "README.md")
+            with open(path, encoding="utf-8") as fh:
+                content = fh.read()
+            sub = os.path.join(self.base, slug)
+            themes = [f for f in os.listdir(sub)
+                      if f.endswith(".md") and f != "README.md"]
+            for t in themes:
+                self.assertIn(f"]({t})", content,
+                              f"{slug}/README.md debe enlazar el tema {t}")
+
+    # -- 8. determinism: a second write is byte-identical ------------------- #
+    def test_technical_report_write_is_deterministic(self):
+        import tempfile
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from phases import technical_report as tr
+        docs = CorpusLoader(_REPO_ROOT).load()
+        kb = KnowledgeBase.from_documents(docs)
+        with tempfile.TemporaryDirectory() as tmp:
+            first = tr.write(tmp, knowledge_base=kb)
+            self.assertTrue(first, "write debe devolver paths escritos")
+            self.assertEqual(first, sorted(first),
+                             "los paths deben estar ordenados")
+            # README maestro + por fase: 7 README de fase + 1 maestro + temas.
+            self.assertGreaterEqual(len(first), 7 + 1 + 14)
+            before = {p: open(p, encoding="utf-8").read() for p in first}
+            second = tr.write(tmp, knowledge_base=kb)
+            self.assertEqual(first, second,
+                             "los paths deben ser estables entre corridas")
+            after = {p: open(p, encoding="utf-8").read() for p in second}
+            self.assertEqual(before, after,
+                             "el informe tecnico debe ser byte-identico")
+
+
+class TestMasterReadmeLinksThreeReports(unittest.TestCase):
+    """FEAT-004: the master index links the three separate engagement reports
+    (commercial proposal, executive report, technical report) and still links
+    the per-phase reports and the Hilo Dorado (regression of the earlier
+    README contract)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        with open(os.path.join(cls.out_dir, "README.md"),
+                  encoding="utf-8") as fh:
+            cls.readme = fh.read()
+
+    def test_links_the_three_engagement_reports(self):
+        self.assertIn("[`1-propuesta-comercial.md`](1-propuesta-comercial.md)",
+                      self.readme)
+        self.assertIn("[`2-reporte-gerencial.md`](2-reporte-gerencial.md)",
+                      self.readme)
+        self.assertIn(
+            "[`3-informe-tecnico/README.md`](3-informe-tecnico/README.md)",
+            self.readme,
+            "el README maestro debe enlazar el informe tecnico (report 3)")
+
+    def test_describes_multilevel_and_dossier_integration(self):
+        low = self.readme.lower()
+        self.assertIn("multinivel", low,
+                      "el README debe describir la estructura multinivel")
+        self.assertIn("to-be/README.md", self.readme,
+                      "el README debe enlazar el dossier TO-BE")
+
+    def test_documents_the_three_skills(self):
+        for skill in ("commercial-proposal-report",
+                      "executive-management-report",
+                      "technical-narrative-multilevel"):
+            self.assertIn(skill, self.readme,
+                          f"el README debe documentar el skill {skill}")
+
+    def test_still_links_per_phase_reports_and_hilo_dorado(self):
+        for fname in EXPECTED_FILENAMES.values():
+            self.assertIn(f"[{fname}]({fname})", self.readme,
+                          f"el README debe seguir enlazando {fname}")
+        self.assertIn("Hilo Dorado", self.readme)
+        for stage in ("DRV", "CAP", "BMK", "GAP", "REL", "ABB", "SBB", "WAV",
+                      "ROI"):
+            self.assertIn(stage, self.readme)
+
+    def test_documents_regeneration_and_reuse(self):
+        self.assertIn("python3 advisory-system/quickstart.py --phase all",
+                      self.readme)
+        self.assertIn("--corpus", self.readme,
+                      "el README debe explicar la reutilizacion con --corpus")
+
+
 if __name__ == "__main__":
     unittest.main()
