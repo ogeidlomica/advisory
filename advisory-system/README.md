@@ -94,6 +94,16 @@ del cliente, pensadas para reutilizarse en otros contextos/corpus:
   corpus; los dos artefactos obligatorios (checklist marcable + tabla de
   trazabilidad) y la regla de degradacion (Pendiente + `[EPISTEMIC-VOID]` donde
   falta texto util / OCR).
+- **`document-extraction-architecture`** - politica de la **arquitectura de
+  extraccion multicapa** (Anexo B): la estrategia y tactica para **maximizar el
+  texto util** de cada documento con una escalera de capas y fallbacks (L1 texto
+  nativo + decodificacion de fuentes `/ToUnicode` **[implementado]**, L2 OCR de
+  paginas imagen, L3 vision/LLM multimodal, L4 NLP/LLM de post-proceso), con
+  umbrales de confianza, validacion de cobertura, gobernanza epistemica, una
+  tabla tactica por tipo de documento y un diagrama Mermaid del flujo de
+  decision. Integra `complete-corpus-ingestion`, `ocr-image-extraction` y
+  `token-budget-optimization`, y marca que capa esta implementada aqui (L1) vs
+  cual requiere el entorno de produccion (L2-L4).
 
 El motor las carga con `engine/skills.py` (`SkillsLoader`): descubre los
 `SKILL.md`, parsea el frontmatter y convierte el catalogo de IA en entradas
@@ -192,6 +202,28 @@ derivado de las senales de texto util / OCR de la Base de Conocimiento
 util). Con el corpus de **otro cliente** el anexo se **regenera** con sus
 solicitudes. El generador es llamable directamente con una `KnowledgeBase` o una
 lista de `Document`, lo que lo hace comprobable sobre un corpus sintetico.
+
+### Anexo B - Arquitectura IA multicapa de extraccion (fundamentado en el corpus)
+
+`phases/extraction_architecture.py` genera, durante `--phase all`, el **Anexo B**
+del informe tecnico bajo
+`advisory-credi10-2.0/3-informe-tecnico/anexo-b-arquitectura-extraccion/`.
+Presenta, como recomendacion de advisory, la **arquitectura de extraccion
+documental multicapa (L1-L4)** cuyo objetivo es **maximizar el texto util** de
+todo el corpus: L1 texto nativo + decodificacion de fuentes (`/ToUnicode`), L2
+OCR de paginas imagen, L3 vision/LLM multimodal y L4 NLP/LLM de post-proceso.
+Incluye narrativa sustancial en espanol, un **diagrama Mermaid** del flujo de
+decision con fallback y la **tabla tactica por tipo de documento**.
+
+Esta **fundamentado en el analisis de cobertura real**: las cifras de texto util
+**antes/despues** se leen de la Base de Conocimiento viva (`doc.useful_ratio`) y
+de la linea base declarativa `engine.knowledge.USEFUL_TEXT_BASELINE_PCT`, de modo
+que **no se hardcodean** y se mantienen en sincronia con el analisis. El anexo
+separa de forma **explicita** lo **implementado aqui (L1**, decodificacion de
+fuentes en `engine/pdf_text.py`) de lo que requiere el **entorno de produccion
+(L2-L4**, OCR/vision/NLP), y nombra los limites honestos (paginas `DCTDecode` que
+siguen necesitando OCR real). Gobernado por el skill
+`document-extraction-architecture`.
 
 ## Universo de modulos como fuente unica de verdad (`phases/modules.py`)
 
@@ -363,6 +395,7 @@ advisory-system/
 │   ├── executive_report.py     # informe 2: reporte gerencial ejecutivo
 │   ├── technical_report.py     # informe 3: informe tecnico multinivel narrativo
 │   ├── requirements_traceability.py  # Anexo A: trazabilidad de requisitos dinamica (checklist + tabla)
+│   ├── extraction_architecture.py    # Anexo B: arquitectura IA multicapa de extraccion (L1-L4), fundamentada en el corpus
 │   └── phase0.py .. phase6.py  # contenido fundamentado en el corpus por fase
 └── tests/                 # pruebas unittest (stdlib)
     └── test_engine.py

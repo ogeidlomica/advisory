@@ -62,6 +62,11 @@ El **Anexo A** responde **punto a punto** cada solicitud del cliente presente en
 | Anexo | Contenido | Donde |
 | --- | --- | --- |
 | Anexo A - Trazabilidad de requisitos | Checklist marcable + tabla punto a punto (dinamica, derivada del corpus) | [`anexo-a-trazabilidad-requisitos/README.md`](anexo-a-trazabilidad-requisitos/README.md) |
+| Anexo B - Arquitectura IA multicapa de extraccion | Estrategia y tactica L1-L4 para maximizar el texto util, con el resultado real antes/despues del corpus (diagrama Mermaid + tabla por tipo de documento) | [`anexo-b-arquitectura-extraccion/README.md`](anexo-b-arquitectura-extraccion/README.md) |
+
+## Anexo B - Arquitectura IA multicapa de extraccion de texto util
+
+El **Anexo B** presenta, como recomendacion de advisory, la arquitectura de **ingesta documental multicapa (L1-L4)** cuyo objetivo es **maximizar el texto util real** de todo el corpus: L1 texto nativo + decodificacion de fuentes (`/ToUnicode`), L2 OCR de paginas imagen, L3 vision/LLM multimodal y L4 NLP/LLM de post-proceso. Esta **fundamentado en el analisis de cobertura real** (cifras antes/despues de texto util leidas de la Base de Conocimiento) y separa de forma explicita lo **implementado aqui (L1)** de lo que requiere el entorno de produccion (L2-L4). Gobernado por el skill generico `document-extraction-architecture`.
 
 ## Hilo Dorado (trazabilidad F1 -> F6)
 

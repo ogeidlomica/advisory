@@ -51,6 +51,7 @@ from phases import phase6
 from phases import modules as modules_mod
 from phases.modules import MODULES
 from phases import requirements_traceability
+from phases import extraction_architecture
 
 
 # --------------------------------------------------------------------------- #
@@ -1959,6 +1960,24 @@ def build_master_readme(knowledge_base=None) -> str:
         "punto a punto (dinamica, derivada del corpus) | "
         "[`anexo-a-trazabilidad-requisitos/README.md`]"
         "(anexo-a-trazabilidad-requisitos/README.md) |",
+        "| Anexo B - Arquitectura IA multicapa de extraccion | Estrategia y "
+        "tactica L1-L4 para maximizar el texto util, con el resultado real "
+        "antes/despues del corpus (diagrama Mermaid + tabla por tipo de "
+        "documento) | [`anexo-b-arquitectura-extraccion/README.md`]"
+        "(anexo-b-arquitectura-extraccion/README.md) |",
+        "",
+        "## Anexo B - Arquitectura IA multicapa de extraccion de texto util",
+        "",
+        "El **Anexo B** presenta, como recomendacion de advisory, la "
+        "arquitectura de **ingesta documental multicapa (L1-L4)** cuyo objetivo "
+        "es **maximizar el texto util real** de todo el corpus: L1 texto nativo "
+        "+ decodificacion de fuentes (`/ToUnicode`), L2 OCR de paginas imagen, "
+        "L3 vision/LLM multimodal y L4 NLP/LLM de post-proceso. Esta "
+        "**fundamentado en el analisis de cobertura real** (cifras antes/despues "
+        "de texto util leidas de la Base de Conocimiento) y separa de forma "
+        "explicita lo **implementado aqui (L1)** de lo que requiere el entorno "
+        "de produccion (L2-L4). Gobernado por el skill generico "
+        "`document-extraction-architecture`.",
         "",
         "## Hilo Dorado (trazabilidad F1 -> F6)",
         "",
@@ -2073,5 +2092,11 @@ def write(out_root: str, knowledge_base=None, roles=None, documents=None,
     annex_paths = requirements_traceability.write(
         base, knowledge_base=knowledge_base, documents=documents)
     written.extend(annex_paths)
+
+    # Anexo B - Arquitectura IA multicapa de extraccion de texto util
+    # (fundamentado en el analisis de cobertura real del corpus).
+    annex_b_paths = extraction_architecture.write(
+        base, knowledge_base=knowledge_base, documents=documents)
+    written.extend(annex_b_paths)
 
     return sorted(written)

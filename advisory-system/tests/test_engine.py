@@ -2220,5 +2220,160 @@ class TestBeforeAfterComparison(unittest.TestCase):
         self.assertIn("1.60%", text, "la linea base de WSO2 debe aparecer")
 
 
+class TestExtractionArchitecture(unittest.TestCase):
+    """FEAT-003: multilayer (L1-L4) document-extraction architecture.
+
+    Covers the generic policy skill ``document-extraction-architecture`` and
+    the GENERATED advisory annex (Anexo B) under the technical report. The
+    annex must be grounded in the REAL corpus coverage numbers (not abstract)
+    and must separate what is implemented here (L1) from what requires the
+    production environment (L2-L4).
+    """
+
+    SKILL_REL = os.path.join(
+        ".kiro", "skills", "document-extraction-architecture", "SKILL.md")
+    ANNEX_REL = os.path.join(
+        "advisory-credi10-2.0", "3-informe-tecnico",
+        "anexo-b-arquitectura-extraccion", "README.md")
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, text=True,
+            timeout=600,
+        )
+        with open(os.path.join(_REPO_ROOT, cls.SKILL_REL),
+                  encoding="utf-8") as fh:
+            cls.skill = fh.read()
+        with open(os.path.join(_REPO_ROOT, cls.ANNEX_REL),
+                  encoding="utf-8") as fh:
+            cls.annex = fh.read()
+        master = os.path.join(_REPO_ROOT, "advisory-credi10-2.0",
+                              "3-informe-tecnico", "README.md")
+        with open(master, encoding="utf-8") as fh:
+            cls.master_readme = fh.read()
+
+    # -- 1. the generic skill exists with the required sections ------------- #
+    def test_skill_exists_and_is_generic_policy(self):
+        self.assertTrue(os.path.isfile(os.path.join(_REPO_ROOT, self.SKILL_REL)),
+                        "debe existir el SKILL.md de la arquitectura de extraccion")
+        self.assertIn("name: document-extraction-architecture", self.skill)
+        self.assertIn("version: 1.0.0", self.skill)
+        self.assertIn("owner:", self.skill)
+        self.assertIn("applies_to:", self.skill)
+        # Client-agnostic: Credi10 only as an EXAMPLE, never the subject.
+        low = self.skill.lower()
+        self.assertIn("ejemplo", low,
+                      "la politica debe citar Credi10 solo como ejemplo")
+
+    def test_skill_defines_four_layers(self):
+        for layer in ("**L1**", "**L2**", "**L3**", "**L4**"):
+            self.assertIn(layer, self.skill,
+                          f"la politica debe definir la capa {layer}")
+        self.assertIn("ToUnicode", self.skill)
+        self.assertIn("OCR", self.skill)
+
+    def test_skill_has_mermaid_tactics_table_and_epistemic_tags(self):
+        self.assertIn("```mermaid", self.skill,
+                      "la politica debe incluir un diagrama Mermaid")
+        self.assertIn("Tipo de documento", self.skill,
+                      "la politica debe incluir la tabla tactica por tipo")
+        for tag in ("[VERIFIED-FACT]", "[OCR-EXTRACTED]", "[EPISTEMIC-VOID]",
+                    "[DOC-ASSUMPTION]", "[DOC-CONFLICT]"):
+            self.assertIn(tag, self.skill,
+                          f"la politica debe gobernar la etiqueta {tag}")
+
+    def test_skill_integrates_sibling_policies(self):
+        self.assertIn("complete-corpus-ingestion", self.skill)
+        self.assertIn("token-budget-optimization", self.skill)
+        self.assertIn("ocr-image-extraction", self.skill)
+
+    def test_skill_is_discovered_by_loader(self):
+        from engine.skills import SkillsLoader
+        names = {s.name for s in SkillsLoader(root=_REPO_ROOT).load()}
+        self.assertIn("document-extraction-architecture", names)
+
+    # -- 2. the generated annex exists, Mermaid + narrative + real figures -- #
+    def test_annex_exists_with_mermaid_and_tactics_table(self):
+        self.assertTrue(os.path.isfile(os.path.join(_REPO_ROOT, self.ANNEX_REL)),
+                        "debe generarse el Anexo B bajo 3-informe-tecnico/")
+        self.assertIn("```mermaid", self.annex,
+                      "el anexo debe incluir un diagrama Mermaid")
+        self.assertIn("Tipo de documento", self.annex,
+                      "el anexo debe incluir la tabla tactica por tipo")
+
+    def test_annex_has_substantial_narrative(self):
+        words = _prose_word_count(self.annex)
+        self.assertGreaterEqual(
+            words, 400,
+            f"el anexo debe tener narrativa sustancial en prosa, tiene {words}")
+
+    def test_annex_is_grounded_in_real_before_after_figures(self):
+        # Real FEAT-002 numbers, not abstract placeholders. These come from the
+        # live knowledge base + the declarative baseline, so they stay in sync.
+        self.assertIn("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+                      self.annex)
+        self.assertIn("1.60%", self.annex,
+                      "la linea base real de WSO2 debe aparecer")
+        self.assertIn("69.74%", self.annex,
+                      "el valor recuperado real de WSO2 debe aparecer")
+        self.assertIn("pp", self.annex, "debe mostrar el delta en pp")
+        # Grounded, not hardcoded: the figures match the knowledge base.
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        wso2 = kb.by_filename(
+            "WSO2 y Studio F - Assessment Mayo2026-Final.pdf")
+        self.assertIsNotNone(wso2)
+        self.assertIn(f"{wso2.useful_ratio * 100.0:.2f}%", self.annex)
+
+    def test_annex_distinguishes_implemented_l1_vs_production_l2_l4(self):
+        self.assertIn("IMPLEMENTADA", self.annex,
+                      "el anexo debe marcar lo implementado (L1)")
+        low = self.annex.lower()
+        self.assertIn("produccion", low,
+                      "el anexo debe marcar lo que requiere produccion (L2-L4)")
+        self.assertIn("DCTDecode", self.annex,
+                      "el anexo debe nombrar el limite honesto de L1 (imagenes "
+                      "DCTDecode que aun necesitan OCR real)")
+        # The skill link is present.
+        self.assertIn("document-extraction-architecture", self.annex)
+
+    def test_annex_registered_in_master_index(self):
+        self.assertIn("anexo-b-arquitectura-extraccion/README.md",
+                      self.master_readme,
+                      "el README maestro del informe tecnico debe enlazar el "
+                      "Anexo B")
+
+    # -- 3. determinism: a second annex write is byte-identical ------------- #
+    def test_annex_write_is_deterministic(self):
+        import tempfile
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from phases import extraction_architecture as ea
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        with tempfile.TemporaryDirectory() as tmp:
+            first = ea.write(tmp, knowledge_base=kb)
+            self.assertEqual(first, sorted(first))
+            before = {p: open(p, encoding="utf-8").read() for p in first}
+            second = ea.write(tmp, knowledge_base=kb)
+            self.assertEqual(first, second)
+            after = {p: open(p, encoding="utf-8").read() for p in second}
+            self.assertEqual(before, after,
+                             "el anexo debe ser byte-identico entre corridas")
+
+    def test_annex_degrades_without_knowledge_base(self):
+        # With no KB the annex still renders (baseline only), without crashing
+        # and without fabricating 'now' numbers.
+        from phases import extraction_architecture as ea
+        body = ea.build_annex(knowledge_base=None)
+        self.assertIn("```mermaid", body)
+        self.assertIn("n/d", body,
+                      "sin KB viva el 'ahora' se marca n/d, no se fabrica")
+
+
 if __name__ == "__main__":
     unittest.main()
