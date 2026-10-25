@@ -7,10 +7,10 @@
 | rol (prioridad) | secondary |
 | tamano (bytes) | 4672023 |
 | longitud raw | 47426 |
-| longitud limpia | 44100 |
-| ratio de cobertura (crudo, legado) | 0.00944 |
+| longitud limpia | 43851 |
+| ratio de cobertura (crudo, legado) | 0.00939 |
 | caracteres de texto util | 23746 |
-| texto util real (palabras / bytes extraidos) | 53.85% |
+| texto util real (palabras / bytes extraidos) | 54.15% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
@@ -18,13 +18,13 @@
 
 ## Resumen jerarquico
 
-- Documento 'ProcesoCorteCartera.pdf' (PDF): 44100 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 53.85%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'ProcesoCorteCartera.pdf' (PDF): 43851 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 54.15%, banda 'alta', clasificacion [VERIFIED-FACT].
 - Seccion 1: Código:FT - DG - 00 2 Versión:001 Fecha: 08/06/2021 FORMATO DE DESARROLLO E INTEGRACIONES FT - SL - 004 - Módulo_Cartera STF GROUP S.A. INFORMATICA – Py. CREDI1...
-- Seccion 2: o s casos de pruebas un itarias realizadas a la solución . NOTA: El desarrollo de cualquier solución de requerimiento debe seguir los estándares de desarrollo q...
-- Seccion 3: o plano en una hora y fecha determinada. BASE DE DATOS C10_ Credi10_NET Tablas y Procedimientos almacenados 1.3 Detallar funcionalidades Código:FT - DG - 00 2 V...
-- Seccion 4: i10.com. co/Facturas/FacturaPers onalizada/ Parámetro WS SIESA - WSDL FacturacionElectronica http://192.168.0. xxx /WSU NOEE/WSUNOEE.asmx Parámetro WS SIESA - U...
-- Seccion 5: ta para el corte Ya se envió estados de cuenta anteriormente Estados de Cuenta El proceso de envió del estado de cuenta ya se realizó anteriormente No se puede...
-- Seccion 6: da corte como una tarea en segundo plano. Para esto en el proyecto se utilizó la librería Quartz.NET que se encarga de ejecutar tareas en segundo plano en un mo...
+- Seccion 2: . DETALLE TECNICO 1.1 Descripción del Requerimiento: 1.1.1 Requerimiento Realizar los procesos saldos al corte, presupuesto, facturación , estados de cuenta y c...
+- Seccion 3: T - DG - 00 2 Versión:001 Fecha: 08/06/2021 Para una mejor visualización, consultar el MER aqui. 1.3.3 Parametrizaciones Descripción Grupo Valor Correo origen e...
+- Seccion 4: acturacionElectronica LvH4GYi3 Parámetro WS SIESA - Nombre de Conexión FacturacionElectronica STFColombia Notas de Reclasificación de Saldos FacturacionElectron...
+- Seccion 5: ndicada no es correcta para el proceso de envió de estados de cuenta No se puede enviar estados de cuenta Estados de Cuenta No es posible enviar estados de cuen...
+- Seccion 6: en la solución. • El Job: Son tareas en segundo plano que se pueden ejecutar. • El Trigger: Controla cuándo se ejecuta un Job y se activa en algún tipo de progr...
 
 ## Hechos clave (trazables)
 
@@ -41,5 +41,5 @@
 | 9 | co/EstadosCuenta/Estad oCuentaPersonalizado/ Url Facturas clientes Facturacion https://www.credi10.com. | Credi10 |
 | 10 | co/Facturas/FacturaPers onalizada/ Parámetro WS SIESA - WSDL FacturacionElectronica http://192.168.0. | Siesa |
 | 11 | xxx /WSU NOEE/WSUNOEE.asmx Parámetro WS SIESA - Usuario FacturacionElectronica interfaz_ecommerce Parámetro WS SIESA - Clave FacturacionElectronica LvH4GYi3 Parámetro WS SIESA - Nombre de Conexión FacturacionElectronica STFColombia Notas de Reclasificación de Saldos FacturacionElectronica NCR Cantidad UVT Mínimo Factur... | Siesa, UnoEE, UNOEE, Ecommerce |
-| 12 | 08/06/2021 porque no se ha enviado la facturacion porque no se ha enviado la facturación del corte HTML para envió de la factura POS al cliente Email Html.... | Email |
+| 12 | 08/06/2021 porque no se ha enviado la facturacion porque no se ha enviado la facturación del corte HTML para envió de la factura POS al cliente Email Html HTML para reporte de facturacion creada Email Html HTML para envió estado de cuenta link Email Html 1.3.4 Proceso • Proceso automático en cada corte Para cumplir con... | Cartera, Email |
 

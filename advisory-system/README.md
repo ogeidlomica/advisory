@@ -201,6 +201,48 @@ antes/despues leida de la linea base declarativa `USEFUL_TEXT_BASELINE_PCT` vs e
 (JPEG `DCTDecode`) sin capa de texto seguiria necesitando OCR real (capa L2), que
 no esta disponible en este entorno.
 
+### Capa complementaria: reconstruccion lexica (`engine/lexical.py`)
+
+Sobre el texto ya recuperado por la decodificacion de fuentes se aplica una
+**capa complementaria de reconstruccion lexica** (`engine/lexical.py`, **solo
+stdlib**, **determinista** e **idempotente**). **No es OCR y no fabrica texto**:
+solo **re-une lo que el espaciado del PDF partio** y **elimina maquetacion sin
+contenido**, subiendo el ratio de texto util sin corromper el texto legitimo.
+Se integra como ultimo paso de `clean_text` en `engine/corpus.py`, separada de
+la decodificacion de fuentes.
+
+Dos transformaciones **conservadoras** (tasa de falsos positivos ~0):
+
+1. **Colapso de guias de puntos de TOC** (`collapse_dot_leaders`): las corridas
+   de `. . . . .` que conectan un titulo con su numero de pagina son artefactos
+   de maquetacion sin contenido lexico; en algunos documentos (p. ej. el
+   Assessment WSO2 y el Api Integrador) representaban ~5-7% de los caracteres y
+   hundian el denominador. Colapsarlas es analogo al colapso de espacios.
+2. **Re-union de mayuscula partida** (`rejoin_split_capitals`): re-pega una
+   **unica consonante mayuscula suelta** a la palabra en minuscula que le sigue
+   (`id C liente` -> `id Cliente`), con **guardas** que impiden fusionar nombres
+   propios (`Studio F podra` conserva su `F`, porque el token previo esta en
+   mayuscula) y palabras distintas. Al operar solo sobre **consonantes**, nunca
+   consume las palabras espanolas de una letra (`a`/`y`/`o`/`e`/`u`, todas
+   vocales).
+
+**Principio: ante la duda, NO se une.** Los cortes ambiguos (letras minusculas
+sueltas con direccion de union indeterminable sin diccionario, pares de silabas
+cortas) se dejan **intactos** a proposito: es preferible un fragmento suelto a
+una fusion incorrecta (el clasico bug `fragmentad`). La capa preserva URLs,
+codigos (`FT-DG-002`), puntuacion y separadores reales, y conserva el flag
+`[VERIFIED-FACT]` (texto NATIVO reconstruido, no inventado).
+
+**Ganancia adicional** (sobre la linea base de solo-decodificacion de fuentes,
+`USEFUL_TEXT_FONT_DECODED_PCT`): **12 de 18 documentos suben y ninguno baja**.
+Destacan el Assessment WSO2 (69.74% -> 74.90%, **+5.16 pp**) y el Api Integrador
+(64.31% -> 69.65%, **+5.34 pp**); el resto de PDF suben entre +0.1 y +1.4 pp y
+los 3 PNG + los PDF ya limpios se mantienen. La comparativa completa, con el
+trayecto de tres etapas (**linea base original -> tras decodificacion de fuentes
+-> tras reconstruccion lexica**) y prosa honesta, se emite en
+`knowledge-base/coverage-checklist.md` (seccion *Ganancia adicional: capa de
+reconstruccion lexica*).
+
 ### Arquitectura IA/OCR multicapa de extraccion (L1-L4)
 
 La decodificacion de fuentes es la **capa L1** de una estrategia de extraccion
@@ -424,7 +466,10 @@ localizan los streams `FlateDecode` del PDF, se **descomprimen con `zlib`** y se
 leen solo las regiones de texto `BT...ET`, decodificando literales `( ... )` y
 cadenas hex `< ... >` de los operadores `Tj`/`TJ`/`'`/`"` a traves del CMap
 `/ToUnicode` (y `/Encoding /Differences`) de la fuente activa rastreada por `Tf`;
-luego se limpia la fragmentacion de caracteres y las etiquetas de idioma. Esta es
+luego se limpia la fragmentacion de caracteres y las etiquetas de idioma y se
+aplica la **capa complementaria de reconstruccion lexica** (`engine/lexical.py`:
+colapso de guias de puntos de TOC + re-union conservadora de mayuscula partida,
+ver 'Capa complementaria' mas arriba). Esta es
 **recuperacion de texto NATIVO (capa L1), no OCR**, por lo que el texto
 recuperado permanece `[VERIFIED-FACT]`. Gracias a esta decodificacion por fuente,
 **los 15 PDF del corpus Credi10 pasaron a banda 'alta'** (ver 'Mejora del
@@ -452,6 +497,7 @@ advisory-system/
 ├── engine/                # nucleo del motor
 │   ├── corpus.py          # CorpusLoader: descubre PDFs/PNGs y extrae texto (delega en pdf_text)
 │   ├── pdf_text.py        # extractor PDF por fuente: /ToUnicode CMap + Tf + Tj/TJ (texto nativo L1, no OCR)
+│   ├── lexical.py         # reconstruccion lexica conservadora (colapso TOC + re-union mayuscula partida; no OCR)
 │   ├── knowledge.py       # KnowledgeBase determinista (indice + resumenes + hechos + checklist; banda por texto util real)
 │   ├── ocr.py             # adaptador OCR (sondeo de capacidad + extraccion con degradacion honesta)
 │   ├── skills.py          # SkillsLoader: carga .kiro/skills y parsea el catalogo de IA

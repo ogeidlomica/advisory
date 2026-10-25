@@ -70,28 +70,28 @@ La recomendacion no es teorica: la **capa L1 ya se ejecuto** sobre el corpus rea
 
 | # | Documento | Texto util antes | Texto util ahora | Delta | Banda ahora | Flag |
 | --- | --- | ---: | ---: | ---: | --- | --- |
-| 1 | Llamada predictiva.pdf | 7.15% | 75.66% | +68.51 pp | alta | [VERIFIED-FACT] |
-| 2 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | 1.60% | 69.74% | +68.14 pp | alta | [VERIFIED-FACT] |
-| 3 | Originacion_API_Inspektor.pdf | 0.99% | 68.27% | +67.28 pp | alta | [VERIFIED-FACT] |
-| 4 | RFP_CREDI10_2_0.pdf | 5.92% | 73.05% | +67.13 pp | alta | [VERIFIED-FACT] |
-| 5 | Originacion_Aplicacion_ADMIN.pdf | 5.75% | 69.63% | +63.88 pp | alta | [VERIFIED-FACT] |
-| 6 | Originacion_API_Datacredito.pdf | 4.35% | 68.03% | +63.68 pp | alta | [VERIFIED-FACT] |
-| 7 | Api Integrador Atencion al cliente.pdf | 0.70% | 64.31% | +63.61 pp | alta | [VERIFIED-FACT] |
-| 8 | LinkDePagos.pdf | 3.43% | 65.91% | +62.48 pp | alta | [VERIFIED-FACT] |
+| 1 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | 1.60% | 74.90% | +73.30 pp | alta | [VERIFIED-FACT] |
+| 2 | Api Integrador Atencion al cliente.pdf | 0.70% | 69.65% | +68.95 pp | alta | [VERIFIED-FACT] |
+| 3 | Llamada predictiva.pdf | 7.15% | 75.66% | +68.51 pp | alta | [VERIFIED-FACT] |
+| 4 | Originacion_API_Inspektor.pdf | 0.99% | 69.31% | +68.32 pp | alta | [VERIFIED-FACT] |
+| 5 | RFP_CREDI10_2_0.pdf | 5.92% | 73.05% | +67.13 pp | alta | [VERIFIED-FACT] |
+| 6 | Originacion_Aplicacion_ADMIN.pdf | 5.75% | 70.45% | +64.70 pp | alta | [VERIFIED-FACT] |
+| 7 | Originacion_API_Datacredito.pdf | 4.35% | 68.80% | +64.45 pp | alta | [VERIFIED-FACT] |
+| 8 | LinkDePagos.pdf | 3.43% | 67.29% | +63.86 pp | alta | [VERIFIED-FACT] |
 | 9 | Envio de RCL y RCR.pdf | 4.13% | 66.43% | +62.30 pp | alta | [VERIFIED-FACT] |
-| 10 | Captura Foto.pdf | 6.48% | 66.06% | +59.58 pp | alta | [VERIFIED-FACT] |
-| 11 | GenerarPagos.pdf | 6.86% | 60.38% | +53.52 pp | alta | [VERIFIED-FACT] |
-| 12 | ProcesoCorteCartera.pdf | 1.09% | 53.85% | +52.76 pp | alta | [VERIFIED-FACT] |
-| 13 | B2C.pdf | 2.55% | 54.60% | +52.05 pp | alta | [VERIFIED-FACT] |
-| 14 | Originacion_CrossCore.pdf | 13.37% | 64.28% | +50.91 pp | alta | [VERIFIED-FACT] |
-| 15 | BotonEcommerce.pdf | 3.29% | 50.10% | +46.81 pp | alta | [VERIFIED-FACT] |
+| 10 | Captura Foto.pdf | 6.48% | 67.02% | +60.54 pp | alta | [VERIFIED-FACT] |
+| 11 | GenerarPagos.pdf | 6.86% | 60.56% | +53.70 pp | alta | [VERIFIED-FACT] |
+| 12 | ProcesoCorteCartera.pdf | 1.09% | 54.15% | +53.06 pp | alta | [VERIFIED-FACT] |
+| 13 | B2C.pdf | 2.55% | 55.54% | +52.99 pp | alta | [VERIFIED-FACT] |
+| 14 | Originacion_CrossCore.pdf | 13.37% | 64.94% | +51.57 pp | alta | [VERIFIED-FACT] |
+| 15 | BotonEcommerce.pdf | 3.29% | 50.96% | +47.67 pp | alta | [VERIFIED-FACT] |
 | 16 | Arquitectura_Aplicacion_Despliegue_Credi10.png | 64.87% | 64.87% | +0.00 pp | alta | [VERIFIED-FACT] |
 | 17 | Arquitectura_Infraestructura_AWS_Credi10.png | 70.29% | 70.29% | +0.00 pp | alta | [VERIFIED-FACT] |
 | 18 | Diagrama_Contexto_Credi10.png | 70.95% | 70.95% | +0.00 pp | alta | [VERIFIED-FACT] |
 
 ### Lectura de los resultados
 
-La decodificacion de fuentes de **L1 recupero texto nativo real** en todo el bloque de PDFs. En particular, el assessment WSO2/Studio F paso de **1.60%** de texto util (banda 'nula', `[EPISTEMIC-VOID]`) a **69.74%** (banda 'alta', `[VERIFIED-FACT]`); y **5 de 5** PDFs que estaban en banda 'nula' con `[EPISTEMIC-VOID]` cruzaron el umbral de texto util (3%) y hoy son texto nativo `[VERIFIED-FACT]`: Api Integrador Atencion al cliente.pdf, B2C.pdf, Originacion_API_Inspektor.pdf, ProcesoCorteCartera.pdf, WSO2 y Studio F - Assessment Mayo2026-Final.pdf. El salto se explica porque su capa de texto SI existia pero usaba fuentes con CMap `/ToUnicode`; el extractor consciente de la fuente (`engine/pdf_text.py`) la decodifica y lee solo dentro de objetos de texto `BT ... ET`, recuperando espanol legible como 'aplicacion', 'arquitectura' o 'integracion'.
+La decodificacion de fuentes de **L1 recupero texto nativo real** en todo el bloque de PDFs. En particular, el assessment WSO2/Studio F paso de **1.60%** de texto util (banda 'nula', `[EPISTEMIC-VOID]`) a **74.90%** (banda 'alta', `[VERIFIED-FACT]`); y **5 de 5** PDFs que estaban en banda 'nula' con `[EPISTEMIC-VOID]` cruzaron el umbral de texto util (3%) y hoy son texto nativo `[VERIFIED-FACT]`: Api Integrador Atencion al cliente.pdf, B2C.pdf, Originacion_API_Inspektor.pdf, ProcesoCorteCartera.pdf, WSO2 y Studio F - Assessment Mayo2026-Final.pdf. El salto se explica porque su capa de texto SI existia pero usaba fuentes con CMap `/ToUnicode`; el extractor consciente de la fuente (`engine/pdf_text.py`) la decodifica y lee solo dentro de objetos de texto `BT ... ET`, recuperando espanol legible como 'aplicacion', 'arquitectura' o 'integracion'.
 
 Es importante subrayar que esta recuperacion es de **texto nativo**, no de OCR: el documento siempre tuvo el texto, solo estaba mal decodificado. Por eso conserva la etiqueta `[VERIFIED-FACT]` y no `[OCR-EXTRACTED]`. El adaptador OCR del motor sigue degradando honestamente (0 OCR en este entorno), sin fabricar contenido.
 

@@ -16,24 +16,24 @@ Politica **complete-corpus-ingestion**: se verifica que CADA documento del corpu
 
 | # | Documento | Procesado | Metodo | Texto util real | Banda | Flag |
 | --- | --- | --- | --- | ---: | --- | --- |
-| 1 | Api Integrador Atencion al cliente.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 64.31% | alta | [VERIFIED-FACT] |
+| 1 | Api Integrador Atencion al cliente.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.65% | alta | [VERIFIED-FACT] |
 | 2 | Arquitectura_Aplicacion_Despliegue_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 64.87% | alta | [VERIFIED-FACT] |
 | 3 | Arquitectura_Infraestructura_AWS_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 70.29% | alta | [VERIFIED-FACT] |
-| 4 | B2C.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 54.60% | alta | [VERIFIED-FACT] |
-| 5 | BotonEcommerce.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 50.10% | alta | [VERIFIED-FACT] |
-| 6 | Captura Foto.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 66.06% | alta | [VERIFIED-FACT] |
+| 4 | B2C.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 55.54% | alta | [VERIFIED-FACT] |
+| 5 | BotonEcommerce.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 50.96% | alta | [VERIFIED-FACT] |
+| 6 | Captura Foto.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 67.02% | alta | [VERIFIED-FACT] |
 | 7 | Diagrama_Contexto_Credi10.png | si | transcripcion estatica PNG (sin OCR) | 70.95% | alta | [VERIFIED-FACT] |
 | 8 | Envio de RCL y RCR.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 66.43% | alta | [VERIFIED-FACT] |
-| 9 | GenerarPagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 60.38% | alta | [VERIFIED-FACT] |
-| 10 | LinkDePagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 65.91% | alta | [VERIFIED-FACT] |
+| 9 | GenerarPagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 60.56% | alta | [VERIFIED-FACT] |
+| 10 | LinkDePagos.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 67.29% | alta | [VERIFIED-FACT] |
 | 11 | Llamada predictiva.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 75.66% | alta | [VERIFIED-FACT] |
-| 12 | Originacion_API_Datacredito.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 68.03% | alta | [VERIFIED-FACT] |
-| 13 | Originacion_API_Inspektor.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 68.27% | alta | [VERIFIED-FACT] |
-| 14 | Originacion_Aplicacion_ADMIN.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.63% | alta | [VERIFIED-FACT] |
-| 15 | Originacion_CrossCore.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 64.28% | alta | [VERIFIED-FACT] |
-| 16 | ProcesoCorteCartera.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 53.85% | alta | [VERIFIED-FACT] |
+| 12 | Originacion_API_Datacredito.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 68.80% | alta | [VERIFIED-FACT] |
+| 13 | Originacion_API_Inspektor.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.31% | alta | [VERIFIED-FACT] |
+| 14 | Originacion_Aplicacion_ADMIN.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 70.45% | alta | [VERIFIED-FACT] |
+| 15 | Originacion_CrossCore.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 64.94% | alta | [VERIFIED-FACT] |
+| 16 | ProcesoCorteCartera.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 54.15% | alta | [VERIFIED-FACT] |
 | 17 | RFP_CREDI10_2_0.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 73.05% | alta | [VERIFIED-FACT] |
-| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 69.74% | alta | [VERIFIED-FACT] |
+| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | si | texto nativo (zlib + /ToUnicode por fuente) | 74.90% | alta | [VERIFIED-FACT] |
 
 ## Resumen de cobertura (por texto util real)
 
@@ -54,24 +54,24 @@ Esta seccion compara el **texto util real %** de cada documento ANTES de la deco
 
 | # | Documento | Tipo | Texto util antes | Texto util ahora | Delta | Banda ahora | Flag |
 | --- | --- | --- | ---: | ---: | ---: | --- | --- |
-| 1 | Api Integrador Atencion al cliente.pdf | pdf | 0.70% | 64.31% | +63.61 pp | alta | [VERIFIED-FACT] |
+| 1 | Api Integrador Atencion al cliente.pdf | pdf | 0.70% | 69.65% | +68.95 pp | alta | [VERIFIED-FACT] |
 | 2 | Arquitectura_Aplicacion_Despliegue_Credi10.png | png | 64.87% | 64.87% | +0.00 pp | alta | [VERIFIED-FACT] |
 | 3 | Arquitectura_Infraestructura_AWS_Credi10.png | png | 70.29% | 70.29% | +0.00 pp | alta | [VERIFIED-FACT] |
-| 4 | B2C.pdf | pdf | 2.55% | 54.60% | +52.05 pp | alta | [VERIFIED-FACT] |
-| 5 | BotonEcommerce.pdf | pdf | 3.29% | 50.10% | +46.81 pp | alta | [VERIFIED-FACT] |
-| 6 | Captura Foto.pdf | pdf | 6.48% | 66.06% | +59.58 pp | alta | [VERIFIED-FACT] |
+| 4 | B2C.pdf | pdf | 2.55% | 55.54% | +52.99 pp | alta | [VERIFIED-FACT] |
+| 5 | BotonEcommerce.pdf | pdf | 3.29% | 50.96% | +47.67 pp | alta | [VERIFIED-FACT] |
+| 6 | Captura Foto.pdf | pdf | 6.48% | 67.02% | +60.54 pp | alta | [VERIFIED-FACT] |
 | 7 | Diagrama_Contexto_Credi10.png | png | 70.95% | 70.95% | +0.00 pp | alta | [VERIFIED-FACT] |
 | 8 | Envio de RCL y RCR.pdf | pdf | 4.13% | 66.43% | +62.30 pp | alta | [VERIFIED-FACT] |
-| 9 | GenerarPagos.pdf | pdf | 6.86% | 60.38% | +53.52 pp | alta | [VERIFIED-FACT] |
-| 10 | LinkDePagos.pdf | pdf | 3.43% | 65.91% | +62.48 pp | alta | [VERIFIED-FACT] |
+| 9 | GenerarPagos.pdf | pdf | 6.86% | 60.56% | +53.70 pp | alta | [VERIFIED-FACT] |
+| 10 | LinkDePagos.pdf | pdf | 3.43% | 67.29% | +63.86 pp | alta | [VERIFIED-FACT] |
 | 11 | Llamada predictiva.pdf | pdf | 7.15% | 75.66% | +68.51 pp | alta | [VERIFIED-FACT] |
-| 12 | Originacion_API_Datacredito.pdf | pdf | 4.35% | 68.03% | +63.68 pp | alta | [VERIFIED-FACT] |
-| 13 | Originacion_API_Inspektor.pdf | pdf | 0.99% | 68.27% | +67.28 pp | alta | [VERIFIED-FACT] |
-| 14 | Originacion_Aplicacion_ADMIN.pdf | pdf | 5.75% | 69.63% | +63.88 pp | alta | [VERIFIED-FACT] |
-| 15 | Originacion_CrossCore.pdf | pdf | 13.37% | 64.28% | +50.91 pp | alta | [VERIFIED-FACT] |
-| 16 | ProcesoCorteCartera.pdf | pdf | 1.09% | 53.85% | +52.76 pp | alta | [VERIFIED-FACT] |
+| 12 | Originacion_API_Datacredito.pdf | pdf | 4.35% | 68.80% | +64.45 pp | alta | [VERIFIED-FACT] |
+| 13 | Originacion_API_Inspektor.pdf | pdf | 0.99% | 69.31% | +68.32 pp | alta | [VERIFIED-FACT] |
+| 14 | Originacion_Aplicacion_ADMIN.pdf | pdf | 5.75% | 70.45% | +64.70 pp | alta | [VERIFIED-FACT] |
+| 15 | Originacion_CrossCore.pdf | pdf | 13.37% | 64.94% | +51.57 pp | alta | [VERIFIED-FACT] |
+| 16 | ProcesoCorteCartera.pdf | pdf | 1.09% | 54.15% | +53.06 pp | alta | [VERIFIED-FACT] |
 | 17 | RFP_CREDI10_2_0.pdf | pdf | 5.92% | 73.05% | +67.13 pp | alta | [VERIFIED-FACT] |
-| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | pdf | 1.60% | 69.74% | +68.14 pp | alta | [VERIFIED-FACT] |
+| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | pdf | 1.60% | 74.90% | +73.30 pp | alta | [VERIFIED-FACT] |
 
 ### Lectura honesta de los resultados
 
@@ -79,4 +79,38 @@ Esta seccion compara el **texto util real %** de cada documento ANTES de la deco
 - **PDFs recuperados del vacio epistemico:** 5 de 5 PDFs que estaban en banda 'nula' / `[EPISTEMIC-VOID]` cruzaron el umbral de texto util (3%) y hoy son texto nativo `[VERIFIED-FACT]`: Api Integrador Atencion al cliente.pdf, B2C.pdf, Originacion_API_Inspektor.pdf, ProcesoCorteCartera.pdf, WSO2 y Studio F - Assessment Mayo2026-Final.pdf.
 - **Por que subieron:** su capa de texto SI existia, pero usaba fuentes embebidas con codificacion personalizada (CMap `/ToUnicode`, p. ej. `Type0`/`Identity-H`). El extractor anterior no aplicaba el mapeo por fuente y ademas inyectaba bytes binarios de imagenes como si fueran texto, hundiendo el ratio de texto util. El nuevo extractor decodifica cada fuente y lee solo objetos de texto, recuperando el espanol legible (p. ej. 'aplicacion'/'arquitectura'/'integracion').
 - **Limites honestos (lo que NO resuelve este nivel):** las paginas que son imagenes reales (JPEG `DCTDecode` sin capa de texto) siguen necesitando OCR real (nivel 2); las fuentes sin `/ToUnicode` ni `/Differences` reconocible degradan al heuristico latin-1. Nada de esto fabrica texto: lo no recuperable permanece marcado honestamente.
+
+## Ganancia adicional: capa de reconstruccion lexica
+
+Capa COMPLEMENTARIA al decodificado de fuentes (no OCR, no fabrica texto). Post-procesa el texto ya extraido con dos transformaciones conservadoras y deterministas (`engine/lexical.py`): (1) **colapso de guias de puntos** de las tablas de contenido (`. . . . .`), que son artefactos de maquetacion sin contenido lexico; y (2) **re-union de mayuscula partida**, que re-pega una unica consonante mayuscula suelta a la palabra en minuscula que le sigue (p. ej. `id C liente` -> `id Cliente`), con guardas estrictas para NO fusionar nombres propios (`Studio F podra` conserva su `F`) ni palabras distintas.
+
+> **Principio conservador:** ante la duda NO se une. Solo se aplican transformaciones con tasa de falsos positivos ~0; los cortes ambiguos (letras minusculas sueltas, pares de silabas cortas) se dejan intactos a proposito. La capa es idempotente (aplicarla dos veces == una vez) y preserva URLs, codigos (`FT-DG-002`), puntuacion y separadores reales.
+
+| # | Documento | Tipo | Tras decodificacion de fuentes | Tras reconstruccion lexica | Delta adicional | Banda |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| 1 | Api Integrador Atencion al cliente.pdf | pdf | 64.31% | 69.65% | +5.34 pp | alta |
+| 2 | Arquitectura_Aplicacion_Despliegue_Credi10.png | png | 64.87% | 64.87% | +0.00 pp | alta |
+| 3 | Arquitectura_Infraestructura_AWS_Credi10.png | png | 70.29% | 70.29% | +0.00 pp | alta |
+| 4 | B2C.pdf | pdf | 54.60% | 55.54% | +0.94 pp | alta |
+| 5 | BotonEcommerce.pdf | pdf | 50.10% | 50.96% | +0.86 pp | alta |
+| 6 | Captura Foto.pdf | pdf | 66.06% | 67.02% | +0.96 pp | alta |
+| 7 | Diagrama_Contexto_Credi10.png | png | 70.95% | 70.95% | +0.00 pp | alta |
+| 8 | Envio de RCL y RCR.pdf | pdf | 66.43% | 66.43% | +0.00 pp | alta |
+| 9 | GenerarPagos.pdf | pdf | 60.38% | 60.56% | +0.18 pp | alta |
+| 10 | LinkDePagos.pdf | pdf | 65.91% | 67.29% | +1.38 pp | alta |
+| 11 | Llamada predictiva.pdf | pdf | 75.66% | 75.66% | +0.00 pp | alta |
+| 12 | Originacion_API_Datacredito.pdf | pdf | 68.03% | 68.80% | +0.77 pp | alta |
+| 13 | Originacion_API_Inspektor.pdf | pdf | 68.27% | 69.31% | +1.04 pp | alta |
+| 14 | Originacion_Aplicacion_ADMIN.pdf | pdf | 69.63% | 70.45% | +0.82 pp | alta |
+| 15 | Originacion_CrossCore.pdf | pdf | 64.28% | 64.94% | +0.66 pp | alta |
+| 16 | ProcesoCorteCartera.pdf | pdf | 53.85% | 54.15% | +0.30 pp | alta |
+| 17 | RFP_CREDI10_2_0.pdf | pdf | 73.05% | 73.05% | +0.00 pp | alta |
+| 18 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | pdf | 69.74% | 74.90% | +5.16 pp | alta |
+
+### Lectura honesta (ganancia adicional)
+
+- **Documentos con ganancia adicional:** 12 de 18 comparables; el resto se mantiene igual (sin regresiones: ningun documento baja).
+- **Mayor ganancia adicional:** Api Integrador Atencion al cliente.pdf (+5.34 pp); proviene sobre todo del colapso de las guias de puntos de las tablas de contenido, que en algunos documentos (p. ej. el Assessment WSO2 y el API Integrador) representaban ~5-7% de los caracteres.
+- **Por que es honesto:** el texto sigue siendo NATIVO del PDF, solo reconstruido; la capa unicamente RE-UNE lo que el espaciado partio y elimina maquetacion sin contenido. Conserva el flag `[VERIFIED-FACT]`; no hay OCR ni texto inventado.
+- **Limite honesto:** los cortes de palabra en minuscula cuya direccion de union es ambigua sin un diccionario se dejan sin tocar (preferimos un fragmento suelto a una fusion incorrecta), por eso la ganancia adicional es modesta en los documentos ya limpios y concentrada donde habia maquetacion de TOC.
 

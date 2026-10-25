@@ -190,10 +190,23 @@ def defragment(text: str) -> str:
 
 
 def clean_text(text: str) -> str:
-    """Full cleanup pipeline: strip tags -> defragment -> collapse whitespace."""
+    """Full cleanup pipeline.
+
+    Order: strip language tags -> single-letter ``defragment`` -> collapse
+    whitespace -> conservative lexical reconstruction (dot-leader collapse +
+    split-capital re-join, see :mod:`engine.lexical`).
+
+    The lexical reconstruction layer is COMPLEMENTARY to the font decoding: it
+    raises the honest useful-text ratio by removing pure layout artifacts (TOC
+    dot leaders) and re-gluing glyph-spacing word splits, WITHOUT fabricating
+    text. It is deterministic and idempotent, so re-running the pipeline leaves
+    the generated tree byte-identical.
+    """
     text = strip_language_tags(text)
     text = defragment(text)
     text = collapse_whitespace(text)
+    from engine.lexical import reconstruct_lexical
+    text = reconstruct_lexical(text)
     return text
 
 

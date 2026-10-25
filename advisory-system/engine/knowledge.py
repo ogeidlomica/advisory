@@ -133,6 +133,40 @@ USEFUL_TEXT_BASELINE_PCT: Dict[str, float] = {
     "WSO2 y Studio F - Assessment Mayo2026-Final.pdf": 1.60,
 }
 
+# --------------------------------------------------------------------------- #
+# FONT-DECODED baseline (post per-font /ToUnicode, PRE lexical reconstruction)
+# --------------------------------------------------------------------------- #
+#
+# Declarative snapshot of the useful-text % recorded AFTER the per-font
+# ToUnicode-aware extractor was wired in but BEFORE the conservative lexical
+# reconstruction layer (:mod:`engine.lexical`: TOC dot-leader collapse +
+# split-capital re-join). This is the band-'alta' baseline that the lexical
+# layer must IMPROVE ON (or hold). Used by the coverage checklist to emit an
+# honest THIRD column: baseline original -> tras decodificacion de fuentes ->
+# tras reconstruccion lexica. Values are percentages (useful_chars /
+# extracted-text bytes * 100). Keep declarative and sorted-by-filename at
+# render time; it is NOT recomputed, it is the historical stage-2 baseline.
+USEFUL_TEXT_FONT_DECODED_PCT: Dict[str, float] = {
+    "Api Integrador Atencion al cliente.pdf": 64.31,
+    "Arquitectura_Aplicacion_Despliegue_Credi10.png": 64.87,
+    "Arquitectura_Infraestructura_AWS_Credi10.png": 70.29,
+    "B2C.pdf": 54.60,
+    "BotonEcommerce.pdf": 50.10,
+    "Captura Foto.pdf": 66.06,
+    "Diagrama_Contexto_Credi10.png": 70.95,
+    "Envio de RCL y RCR.pdf": 66.43,
+    "GenerarPagos.pdf": 60.38,
+    "LinkDePagos.pdf": 65.91,
+    "Llamada predictiva.pdf": 75.66,
+    "Originacion_API_Datacredito.pdf": 68.03,
+    "Originacion_API_Inspektor.pdf": 68.27,
+    "Originacion_Aplicacion_ADMIN.pdf": 69.63,
+    "Originacion_CrossCore.pdf": 64.28,
+    "ProcesoCorteCartera.pdf": 53.85,
+    "RFP_CREDI10_2_0.pdf": 73.05,
+    "WSO2 y Studio F - Assessment Mayo2026-Final.pdf": 69.74,
+}
+
 # The five PDFs that were in band 'nula' / [EPISTEMIC-VOID] at baseline because
 # their native text layer uses custom-encoded embedded fonts (declarative, for
 # honest prose in the comparison).
@@ -775,6 +809,96 @@ class KnowledgeBase:
             "`/ToUnicode` ni `/Differences` reconocible degradan al heuristico "
             "latin-1. Nada de esto fabrica texto: lo no recuperable permanece "
             "marcado honestamente.",
+            "",
+        ]
+        lines += self._lexical_comparison_lines()
+        return lines
+
+    def _lexical_comparison_lines(self) -> List[str]:
+        """Render the FONT-DECODED vs LEXICAL-RECONSTRUCTED comparison.
+
+        This is the ADDITIONAL gain of the complementary lexical reconstruction
+        layer (:mod:`engine.lexical`) over the per-font decoding stage. It makes
+        the three-stage trajectory traceable per document: baseline original
+        (FEAT-001) -> tras decodificacion de fuentes
+        (:data:`USEFUL_TEXT_FONT_DECODED_PCT`) -> tras reconstruccion lexica
+        (valor ACTUAL de este run). Deterministic, sorted by filename.
+        """
+        lines: List[str] = [
+            "## Ganancia adicional: capa de reconstruccion lexica",
+            "",
+            "Capa COMPLEMENTARIA al decodificado de fuentes (no OCR, no "
+            "fabrica texto). Post-procesa el texto ya extraido con dos "
+            "transformaciones conservadoras y deterministas "
+            "(`engine/lexical.py`): (1) **colapso de guias de puntos** de las "
+            "tablas de contenido (`. . . . .`), que son artefactos de "
+            "maquetacion sin contenido lexico; y (2) **re-union de mayuscula "
+            "partida**, que re-pega una unica consonante mayuscula suelta a la "
+            "palabra en minuscula que le sigue (p. ej. `id C liente` -> "
+            "`id Cliente`), con guardas estrictas para NO fusionar nombres "
+            "propios (`Studio F podra` conserva su `F`) ni palabras distintas.",
+            "",
+            "> **Principio conservador:** ante la duda NO se une. Solo se "
+            "aplican transformaciones con tasa de falsos positivos ~0; los "
+            "cortes ambiguos (letras minusculas sueltas, pares de silabas "
+            "cortas) se dejan intactos a proposito. La capa es idempotente "
+            "(aplicarla dos veces == una vez) y preserva URLs, codigos "
+            "(`FT-DG-002`), puntuacion y separadores reales.",
+            "",
+            "| # | Documento | Tipo | Tras decodificacion de fuentes | "
+            "Tras reconstruccion lexica | Delta adicional | Banda |",
+            "| --- | --- | --- | ---: | ---: | ---: | --- |",
+        ]
+        improved = 0
+        held = 0
+        best_name = None
+        best_delta = 0.0
+        for i, d in enumerate(self.documents, start=1):
+            prior = USEFUL_TEXT_FONT_DECODED_PCT.get(d.filename)
+            now = d.useful_ratio * 100.0
+            if prior is None:
+                prior_s = "n/d"
+                delta_s = "n/d"
+            else:
+                prior_s = f"{prior:.2f}%"
+                delta = now - prior
+                if abs(delta) < 0.005:
+                    delta = 0.0
+                sign = "+" if delta >= 0 else ""
+                delta_s = f"{sign}{delta:.2f} pp"
+                if delta > 0.01:
+                    improved += 1
+                    if delta > best_delta:
+                        best_delta = delta
+                        best_name = d.filename
+                else:
+                    held += 1
+            lines.append(
+                f"| {i} | {d.filename} | {d.kind} | {prior_s} | "
+                f"{now:.2f}% | {delta_s} | {d.coverage_band} |"
+            )
+        best_txt = (
+            f"{best_name} (+{best_delta:.2f} pp)" if best_name else "n/d")
+        lines += [
+            "",
+            "### Lectura honesta (ganancia adicional)",
+            "",
+            f"- **Documentos con ganancia adicional:** {improved} de "
+            f"{improved + held} comparables; el resto se mantiene igual "
+            "(sin regresiones: ningun documento baja).",
+            f"- **Mayor ganancia adicional:** {best_txt}; proviene sobre todo "
+            "del colapso de las guias de puntos de las tablas de contenido, "
+            "que en algunos documentos (p. ej. el Assessment WSO2 y el API "
+            "Integrador) representaban ~5-7% de los caracteres.",
+            "- **Por que es honesto:** el texto sigue siendo NATIVO del PDF, "
+            "solo reconstruido; la capa unicamente RE-UNE lo que el espaciado "
+            "partio y elimina maquetacion sin contenido. Conserva el flag "
+            "`[VERIFIED-FACT]`; no hay OCR ni texto inventado.",
+            "- **Limite honesto:** los cortes de palabra en minuscula cuya "
+            "direccion de union es ambigua sin un diccionario se dejan sin "
+            "tocar (preferimos un fragmento suelto a una fusion incorrecta), "
+            "por eso la ganancia adicional es modesta en los documentos ya "
+            "limpios y concentrada donde habia maquetacion de TOC.",
             "",
         ]
         return lines

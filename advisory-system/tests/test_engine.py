@@ -2312,23 +2312,25 @@ class TestExtractionArchitecture(unittest.TestCase):
             f"el anexo debe tener narrativa sustancial en prosa, tiene {words}")
 
     def test_annex_is_grounded_in_real_before_after_figures(self):
-        # Real FEAT-002 numbers, not abstract placeholders. These come from the
+        # Real recovery numbers, not abstract placeholders. These come from the
         # live knowledge base + the declarative baseline, so they stay in sync.
         self.assertIn("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
                       self.annex)
         self.assertIn("1.60%", self.annex,
                       "la linea base real de WSO2 debe aparecer")
-        self.assertIn("69.74%", self.annex,
-                      "el valor recuperado real de WSO2 debe aparecer")
         self.assertIn("pp", self.annex, "debe mostrar el delta en pp")
-        # Grounded, not hardcoded: the figures match the knowledge base.
+        # Grounded, not hardcoded: the recovered 'now' figure is read from the
+        # LIVE knowledge base (so it tracks the lexical-reconstruction gain,
+        # e.g. WSO2 74.90% rather than the pre-lexical 69.74%), not pinned to a
+        # literal that would drift when extraction improves.
         from engine.corpus import CorpusLoader
         from engine.knowledge import KnowledgeBase
         kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
         wso2 = kb.by_filename(
             "WSO2 y Studio F - Assessment Mayo2026-Final.pdf")
         self.assertIsNotNone(wso2)
-        self.assertIn(f"{wso2.useful_ratio * 100.0:.2f}%", self.annex)
+        self.assertIn(f"{wso2.useful_ratio * 100.0:.2f}%", self.annex,
+                      "el valor recuperado VIVO de WSO2 debe aparecer en el anexo")
 
     def test_annex_distinguishes_implemented_l1_vs_production_l2_l4(self):
         self.assertIn("IMPLEMENTADA", self.annex,
@@ -2373,6 +2375,177 @@ class TestExtractionArchitecture(unittest.TestCase):
         self.assertIn("```mermaid", body)
         self.assertIn("n/d", body,
                       "sin KB viva el 'ahora' se marca n/d, no se fabrica")
+
+
+class TestLexicalReconstruction(unittest.TestCase):
+    """Complementary lexical reconstruction layer (engine/lexical.py).
+
+    Verifies the de-fragmentation / layout-normalisation is correct, that the
+    anti-corruption guards hold (no fusing of distinct words / proper nouns),
+    that it is idempotent, and that it strictly IMPROVES the useful-text % of a
+    real corpus document over the font-decoding-only baseline. These tests fail
+    if the lexical layer is reverted.
+    """
+
+    # -- 1. correct de-fragmentation -------------------------------------- #
+    def test_collapse_dot_leaders(self):
+        from engine.lexical import collapse_dot_leaders
+        # A TOC dot-leader run (>= 3 dots, spaced or not) is removed; a real
+        # heading / page number survives.
+        src = "Objetivo del Documento . . . . . . 3"
+        out = collapse_dot_leaders(src)
+        self.assertNotIn(". . .", out)
+        self.assertIn("Objetivo del Documento", out)
+        self.assertIn("3", out)
+        # A single sentence-ending dot is NOT a leader and must be preserved.
+        self.assertEqual(collapse_dot_leaders("Fin."), "Fin.")
+
+    def test_rejoin_split_capital_forward(self):
+        from engine.lexical import rejoin_split_capitals
+        # "id C liente" -> "id Cliente" (capital belongs to the next fragment).
+        self.assertEqual(rejoin_split_capitals("id C liente"), "id Cliente")
+        # Chained with a surrounding sentence.
+        self.assertEqual(
+            rejoin_split_capitals("consultar el C orreo del cliente"),
+            "consultar el Correo del cliente")
+
+    def test_reconstruct_known_fragments(self):
+        from engine.lexical import reconstruct_lexical
+        # Dot leaders collapse AND the split capital re-joins in one pass.
+        src = "Detallar componentes . . . . . 6 id C liente"
+        out = reconstruct_lexical(src)
+        self.assertNotIn(". . .", out)
+        self.assertIn("Detallar componentes", out)
+        self.assertIn("Cliente", out)
+        self.assertNotIn(" C liente", out)
+
+    # -- 2. anti-corruption guards (the 'fragmentad' bug) ----------------- #
+    def test_proper_noun_initial_not_merged(self):
+        from engine.lexical import reconstruct_lexical
+        # "Studio F podra" must KEEP its standalone initial F: the preceding
+        # token 'Studio' is capitalised, so F is a name-initial, not a split.
+        out = reconstruct_lexical("Studio F podra transformar")
+        self.assertIn("Studio F podra", out)
+        self.assertNotIn("Fpodra", out)
+
+    def test_distinct_words_not_fused(self):
+        from engine.lexical import reconstruct_lexical
+        # Two legitimate, complete words separated by a space are NEVER fused.
+        for phrase in ("la arquitectura", "pagos web", "para ver",
+                       "lista de pagos", "aplicacion web"):
+            self.assertEqual(
+                reconstruct_lexical(phrase), phrase,
+                f"no debe fusionar palabras distintas: {phrase!r}")
+
+    def test_single_letter_spanish_words_preserved(self):
+        from engine.lexical import reconstruct_lexical
+        # The real one-letter Spanish words (vowels a/y/o/e/u) must survive: the
+        # rule only ever touches CONSONANTS, so these are untouched.
+        for phrase in ("pagos a la tienda", "entrada y salida",
+                       "uno o dos", "siete u ocho"):
+            self.assertEqual(reconstruct_lexical(phrase), phrase,
+                             f"palabra de una letra no debe tocarse: {phrase!r}")
+
+    def test_lowercase_stray_letter_left_untouched(self):
+        from engine.lexical import reconstruct_lexical
+        # A lowercase stray letter has ambiguous merge direction (could be
+        # 'las c uatro' -> 'las cuatro' OR 'tienda s' -> 'tiendas'); the
+        # conservative layer leaves it ALONE rather than guess wrong.
+        self.assertEqual(reconstruct_lexical("las c uatro"), "las c uatro")
+
+    # -- 3. idempotence ---------------------------------------------------- #
+    def test_idempotent(self):
+        from engine.lexical import reconstruct_lexical
+        for src in (
+            "Detallar componentes . . . . . 6 id C liente",
+            "Studio F podra . . . transformar la arquitectura",
+            "Codigo:FT - DG - 002 Version:001",
+            "",
+        ):
+            once = reconstruct_lexical(src)
+            twice = reconstruct_lexical(once)
+            self.assertEqual(once, twice,
+                             f"la capa debe ser idempotente para {src!r}")
+
+    def test_structural_noise_preserved(self):
+        from engine.lexical import reconstruct_lexical
+        # Codes and URLs are valid data and must survive verbatim (apart from
+        # whitespace normalisation).
+        out = reconstruct_lexical("Codigo FT-DG-002 https://credi10.co/pagos")
+        self.assertIn("FT-DG-002", out)
+        self.assertIn("https://credi10.co/pagos", out)
+
+    # -- 4. strict useful-text improvement on a REAL corpus document ------- #
+    def test_improves_useful_text_over_font_decoding_baseline(self):
+        """A real corpus PDF beats its font-decoding-only useful-text baseline."""
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import (
+            enrich_corpus, USEFUL_TEXT_FONT_DECODED_PCT)
+        enriched = enrich_corpus(CorpusLoader(_REPO_ROOT).load())
+        by_name = {d.filename: d for d in enriched}
+        # WSO2 and Api Integrador carry heavy TOC dot-leaders -> clear gain.
+        for fname in ("WSO2 y Studio F - Assessment Mayo2026-Final.pdf",
+                      "Api Integrador Atencion al cliente.pdf"):
+            d = by_name.get(fname)
+            self.assertIsNotNone(d, f"debe descubrirse {fname}")
+            prior = USEFUL_TEXT_FONT_DECODED_PCT[fname]
+            now = d.useful_ratio * 100.0
+            self.assertGreater(
+                now, prior,
+                f"{fname}: texto util tras reconstruccion lexica ({now:.2f}%) "
+                f"debe superar la linea base de solo-decodificacion "
+                f"({prior:.2f}%)")
+
+    def test_no_document_regresses_below_font_decoding_baseline(self):
+        """No document loses useful text vs the font-decoding-only baseline."""
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import (
+            enrich_corpus, USEFUL_TEXT_FONT_DECODED_PCT)
+        enriched = enrich_corpus(CorpusLoader(_REPO_ROOT).load())
+        for d in enriched:
+            prior = USEFUL_TEXT_FONT_DECODED_PCT.get(d.filename)
+            if prior is None:
+                continue
+            now = d.useful_ratio * 100.0
+            # Allow a hair of rounding tolerance; the layer never deletes words.
+            self.assertGreaterEqual(
+                now, prior - 0.01,
+                f"{d.filename}: la reconstruccion lexica no debe reducir el "
+                f"texto util ({now:.2f}% < {prior:.2f}%)")
+
+
+class TestLexicalChecklistComparison(unittest.TestCase):
+    """The regenerated checklist carries the ADDITIONAL-gain comparison."""
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, text=True,
+            timeout=600,
+        )
+        path = os.path.join(_REPO_ROOT, "knowledge-base",
+                            "coverage-checklist.md")
+        with open(path, encoding="utf-8") as fh:
+            cls.checklist = fh.read()
+
+    def test_checklist_has_lexical_section(self):
+        self.assertIn("capa de reconstruccion lexica", self.checklist)
+        self.assertIn("Tras decodificacion de fuentes", self.checklist)
+        self.assertIn("Tras reconstruccion lexica", self.checklist)
+        self.assertIn("Delta adicional", self.checklist)
+
+    def test_checklist_reports_additional_gain(self):
+        # The section states how many documents improved and that none regress.
+        self.assertIn("Documentos con ganancia adicional", self.checklist)
+        self.assertIn("sin regresiones", self.checklist)
+        # The WSO2 additional gain is visible and positive.
+        self.assertRegex(
+            self.checklist,
+            r"WSO2 y Studio F - Assessment Mayo2026-Final\.pdf \| pdf \| "
+            r"69\.74% \| 7[0-9]\.\d{2}% \| \+\d")
 
 
 if __name__ == "__main__":

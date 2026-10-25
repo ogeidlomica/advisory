@@ -7,10 +7,10 @@
 | rol (prioridad) | primary |
 | tamano (bytes) | 1490004 |
 | longitud raw | 33333 |
-| longitud limpia | 27354 |
-| ratio de cobertura (crudo, legado) | 0.01836 |
+| longitud limpia | 25467 |
+| ratio de cobertura (crudo, legado) | 0.01709 |
 | caracteres de texto util | 19076 |
-| texto util real (palabras / bytes extraidos) | 69.74% |
+| texto util real (palabras / bytes extraidos) | 74.90% |
 | banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | zlib + /ToUnicode por fuente (capa de texto nativa PDF) |
@@ -18,19 +18,19 @@
 
 ## Resumen jerarquico
 
-- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 27354 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 69.74%, banda 'alta', clasificacion [VERIFIED-FACT].
-- Seccion 1: Assessment de Arquitectura Fecha: Mayo, 2026 Index 1. Objetivo del Documento ................................ ................................ ....................
-- Seccion 2: GID ................................ ................................ ................................ ........... 7 3.4. Architectura PLM ........................
-- Seccion 3: ...... ......... 15 5.1. Simplificar y estandarizar las integraciones ................................ ................................ ...... 15 5.2. Gestionar...
-- Seccion 4: de mejora y en su arquitectura, donde las soluciones WSO2 API Platform y WSO2 Integration Platform pueden ayudar a modernizar su ecosistema, además de proporcio...
-- Seccion 5: orar la eficiencia operativa, reduciendo significativamente el Time - to - Market y la carga operativa manual. 2.1. Puntos dolores principales ● Complejidad de...
-- Seccion 6: la falta de integridad de los datos, los usuarios hacen sus controles manualmente mediante Excel. ● Falta de Gobernanza y Control ○ Varias aplicaciones .NET des...
+- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 25467 caracteres limpios extraidos (zlib + /ToUnicode por fuente), texto util real 74.90%, banda 'alta', clasificacion [VERIFIED-FACT].
+- Seccion 1: Assessment de Arquitectura Fecha: Mayo, 2026 Index 1. Objetivo del Documento 3 2. Contexto de Negócio 3 2.1. Puntos dolores principales 3 3. Arquitectura Actual...
+- Seccion 2: ion Platform pueden ayudar a modernizar su ecosistema, además de proporcionar beneficios de gobernanza y gestión para las API e integraciones con los sistemas c...
+- Seccion 3: carga operativa manual. 2.1. Puntos dolores principales ● Complejidad de integración: ○ ERP Siesa - las integraciones con su ERP sónrígidas, mediante archivos p...
+- Seccion 4: ante Excel. ● Falta de Gobernanza y Control ○ Varias aplicaciones .NET desarrolladas de forma desordenada para resolver problemas puntuales y muchas de ellas co...
+- Seccion 5: Diagrama de Contenedores 3.4. Architectura PLM A continuación los diagramas de Contexto y de Contenedores relacionados a la arquitectura del PLM (Product Lifecy...
+- Seccion 6: TEX JSON/HTTP Consulta 9 Gestor Ecommerce Transportadoras JSON/HTTP Consulta Guias 10 Middleware ECommerce Siesa Unoee XML/SOAP Sincroniza Pedidos, Extrae Catál...
 
 ## Hechos clave (trazables)
 
 | # | Hecho | Tokens |
 | --- | --- | --- |
-| 1 | Gestionar todas las APIs de manera Centralizada ................................ | API |
+| 1 | Gestionar todas las APIs de manera Centralizada 19 5.3. | API |
 | 2 | Objetivo del Documento Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arquitectura, donde las soluciones WSO2 API Platform y WSO2 Integration Platform pueden ayudar a modernizar su ecosistema, además de proporcionar beneficios de gobernanza y gestión para las API e integracione... | WSO2, Studio F, API |
 | 3 | Contexto de Negócio Studio F cuenta con una arquitectura fragmentada y un ecosistema de sistemas y aplicaciones desactualizados, compuestos por más de 150 aplicaciones .NET y 200 bases de datos con informaciones duplicadas e inconsistentes. | .NET, Studio F |
 | 4 | Actualmente, el ecosistema depende de integraciones "punto a punto" y procesos batch (archivos planos) hacia su ERP Siesa. | Siesa |
