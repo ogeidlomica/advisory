@@ -8,15 +8,17 @@
 | tamano (bytes) | 330050 |
 | longitud raw | 175952 |
 | longitud limpia | 161351 |
-| ratio de cobertura | 0.48887 |
-| banda de cobertura | alta |
+| ratio de cobertura (crudo, legado) | 0.48887 |
+| caracteres de texto util | 6668 |
+| texto util real (palabras / bytes extraidos) | 4.13% |
+| banda de cobertura (por texto util real) | baja |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `8a5b0becf5b4a0f87f2450a4da700c1fda0561abb55d45217cfb0d7c8a31e5c7` |
 
 ## Resumen jerarquico
 
-- Documento 'Envio de RCL y RCR.pdf' (PDF): 161351 caracteres limpios extraidos (zlib+regex), cobertura 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Envio de RCL y RCR.pdf' (PDF): 161351 caracteres limpios extraidos (zlib+regex), texto util real 4.13%, banda 'baja', clasificacion [VERIFIED-FACT].
 - Seccion 1: FORM A TO DE DESARRO LL O E INTEGRACIONES I ntegrac i ón en vi ó de RCLy RCR a Un oE STF GROUP S . A . IN FORM A TICA Py . es-MX CREDI 10 SOF TWA RE PROPIO C al...
 - Seccion 2: e lo s envíos es-CL es-CL es-CL 3 es-CL - Cr earp roce so que se e jecu te au to m á tic amen te cada d í a 4 del mes , donde se cree un documento de tip o RCL...
 - Seccion 3: u entas inf luye en f358 _ id_ med ios_ p ago es-CL es-CL es-CL es-CL es-CL tb l_ c ompr obantes . ba nc o_ c on s igna c ion tb l_ c omprobantes . t ipo_ trans...

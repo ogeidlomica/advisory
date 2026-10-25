@@ -8,15 +8,17 @@
 | tamano (bytes) | 398028 |
 | longitud raw | 175086 |
 | longitud limpia | 161503 |
-| ratio de cobertura | 0.40576 |
-| banda de cobertura | alta |
+| ratio de cobertura (crudo, legado) | 0.40576 |
+| caracteres de texto util | 9556 |
+| texto util real (palabras / bytes extraidos) | 5.92% |
+| banda de cobertura (por texto util real) | baja |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `9ea0d58a40e2321c6c37d3b49636dad92574981e2ee8290a4bbc17abb4cb0931` |
 
 ## Resumen jerarquico
 
-- Documento 'RFP_CREDI10_2_0.pdf' (PDF): 161503 caracteres limpios extraidos (zlib+regex), cobertura 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'RFP_CREDI10_2_0.pdf' (PDF): 161503 caracteres limpios extraidos (zlib+regex), texto util real 5.92%, banda 'baja', clasificacion [VERIFIED-FACT].
 - Seccion 1: C ar rera 34 No . 10 - 581 Tel 68500 00 Ext. 2269 Acopi - Yu mb o SOL IC IT UD DE O FERT A (RF P ) No: 00 1 PR OYE CTO DE CREDI 10 2 . 0 STF GRO UP S.A . C ar r...
 - Seccion 2: i cas y f un ci on al es es t ab l eci da s en l os cap í t ul os si gu i en t es. 1.3 A LC ANCE La propue st a presen t ad a po r el ofe r en te de be con t em...
 - Seccion 3: m . co N ombre: Ni co l as Ortiz C argo : Je fe So l uc i on es y A rqu it ec t ura N umero de co ntac to: 3 24 65 40 63 1 C orreo el ec tróni co : nic olas. or...

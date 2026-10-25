@@ -8,21 +8,17 @@
 | tamano (bytes) | 1490004 |
 | longitud raw | 1695397 |
 | longitud limpia | 1673322 |
-| ratio de cobertura | 1.00000 |
-| banda de cobertura | alta |
-| flag epistemico | [VERIFIED-FACT] |
-| metodo de ingesta | zlib+regex (capa de texto PDF) |
+| ratio de cobertura (crudo, legado) | 1.00000 |
+| caracteres de texto util | 26846 |
+| texto util real (palabras / bytes extraidos) | 1.60% |
+| banda de cobertura (por texto util real) | nula |
+| flag epistemico | [EPISTEMIC-VOID] |
+| metodo de ingesta | OCR pendiente (motor no disponible en este entorno) |
 | sha256 | `a8f03b42fa08b2021dc94f002ff581926f228cc00f42cbb95060fa93646972fd` |
 
 ## Resumen jerarquico
 
-- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): 1673322 caracteres limpios extraidos (zlib+regex), cobertura 'alta', clasificacion [VERIFIED-FACT].
-- Seccion 1: Assessment de Arquitectura Fecha : Mayo , 2026 Ind ex 1. Ob je tivo del Documen to ................................ ................................ ..............
-- Seccion 2: ..... .. 5 3.3. Ar quit ec tura C EG ID ................................ ................................ ................................ ........... 7 3.4. Ar...
-- Seccion 3: / Recomend ac iones ................................ ................................ ......... 15 5.1. S im pli fic arye standa riz ar la s inte gr acio ne s ....
-- Seccion 4: ............. ...... 36 1. Obje ti vo de l Docum en to Evaluar el contexto actual de Studio F para analizar las oportunidades de mejora y en su arqu ite ct u ra...
-- Seccion 5: s) h ac ia su ERP Siesa. Pa ra re ver t ir e st a si tu ac ión, Stud io F bu sca cent ra li z ar y e st an d ariz ar su s in teg racione s bajo un mode lo de go...
-- Seccion 6: at os, una pr áct ic a de al to rie sg o p ara la e st ab i li dad del si st ema. Inconsistencia de Datos La l ó gica est á repetida en m ú ltiples puntos , lo...
+- Documento 'WSO2 y Studio F - Assessment Mayo2026-Final.pdf' (PDF): ingerido; la capa de texto es ruido/fragmentos (texto util real 1.60% de lo extraido), sin contenido explotable. PDF basado en imagen, marcado [EPISTEMIC-VOID], OCR pendiente. No se fabrica contenido.
 
 ## Hechos clave (trazables)
 

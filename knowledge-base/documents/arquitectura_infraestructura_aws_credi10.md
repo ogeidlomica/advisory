@@ -8,8 +8,10 @@
 | tamano (bytes) | 120983 |
 | longitud raw | 276 |
 | longitud limpia | 276 |
-| ratio de cobertura | 0.00228 |
-| banda de cobertura | baja |
+| ratio de cobertura (crudo, legado) | 0.00228 |
+| caracteres de texto util | 194 |
+| texto util real (palabras / bytes extraidos) | 70.29% |
+| banda de cobertura (por texto util real) | alta |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | transcripcion estatica PNG (sin OCR) |
 | sha256 | `f4491865fe1a74ea886490bb1465ee2753b4361f241fbad3c6782d1ae6a02c74` |

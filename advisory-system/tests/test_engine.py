@@ -813,16 +813,25 @@ class TestKnowledgeBase(unittest.TestCase):
             )
 
     def test_image_only_pdf_flagged_void_not_fabricated(self):
-        # Honest epistemic policy: any PDF without a usable text layer must be
-        # [EPISTEMIC-VOID] (never fabricated). Assert the rule, not a specific
-        # count, since extraction quality can vary.
+        # Honest epistemic policy (recalibrated): the flag is driven by the REAL
+        # useful-text ratio (real words / extracted-text bytes), NOT by raw
+        # extracted size. A PDF whose useful text is below the threshold (an
+        # image/scan, OCR pending in this environment) must be [EPISTEMIC-VOID];
+        # above it, [VERIFIED-FACT]. Text is never fabricated. OCR-recovered
+        # text (not reachable without an OCR engine) would be [OCR-EXTRACTED].
         from engine.knowledge import (
-            MIN_CLEAN_CHARS_FOR_VERIFIED, EPISTEMIC_VOID, VERIFIED_FACT,
+            MIN_USEFUL_RATIO_FOR_TEXT, EPISTEMIC_VOID, VERIFIED_FACT,
+            OCR_EXTRACTED,
         )
         for d in self.kb.documents:
-            if d.kind == "pdf" and d.clean_length < MIN_CLEAN_CHARS_FOR_VERIFIED:
+            if d.kind != "pdf":
+                continue
+            if d.epistemic_flag == OCR_EXTRACTED:
+                # Only possible when a real OCR engine is present.
+                continue
+            if d.useful_ratio < MIN_USEFUL_RATIO_FOR_TEXT:
                 self.assertEqual(d.epistemic_flag, EPISTEMIC_VOID, d.filename)
-            elif d.kind == "pdf":
+            else:
                 self.assertEqual(d.epistemic_flag, VERIFIED_FACT, d.filename)
 
     def test_write_is_deterministic_and_complete(self):

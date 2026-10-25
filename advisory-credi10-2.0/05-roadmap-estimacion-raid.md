@@ -297,25 +297,25 @@ Analisis explicito del **riesgo de desfase de tiempos**: supuestos fragiles, dep
 
 | Modulo | Documento fuente | Banda de cobertura | Flag epistemico | Incertidumbre de estimacion |
 | --- | --- | --- | --- | --- |
-| MOD-01 | RFP_CREDI10_2_0.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-02 | Originacion_CrossCore.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-03 | Originacion_API_Inspektor.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-04 | Originacion_API_Datacredito.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-05 | Originacion_Aplicacion_ADMIN.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-06 | GenerarPagos.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-07 | ProcesoCorteCartera.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-08 | LinkDePagos.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-09 | B2C.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-10 | BotonEcommerce.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-11 | Captura_Foto.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-12 | Api_Integrador_Atencion_al_cliente.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-13 | Llamada_predictiva.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-14 | RFP_CREDI10_2_0.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-15 | Envio_de_RCL_y_RCR.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-16 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | alta | [VERIFIED-FACT] | BAJA |
-| MOD-17 | RFP_CREDI10_2_0.pdf | alta | [VERIFIED-FACT] | BAJA |
+| MOD-01 | RFP_CREDI10_2_0.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-02 | Originacion_CrossCore.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-03 | Originacion_API_Inspektor.pdf | nula | [EPISTEMIC-VOID] | ALTA |
+| MOD-04 | Originacion_API_Datacredito.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-05 | Originacion_Aplicacion_ADMIN.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-06 | GenerarPagos.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-07 | ProcesoCorteCartera.pdf | nula | [EPISTEMIC-VOID] | ALTA |
+| MOD-08 | LinkDePagos.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-09 | B2C.pdf | nula | [EPISTEMIC-VOID] | ALTA |
+| MOD-10 | BotonEcommerce.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-11 | Captura_Foto.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-12 | Api_Integrador_Atencion_al_cliente.pdf | nula | [EPISTEMIC-VOID] | ALTA |
+| MOD-13 | Llamada_predictiva.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-14 | RFP_CREDI10_2_0.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-15 | Envio_de_RCL_y_RCR.pdf | baja | [VERIFIED-FACT] | ALTA |
+| MOD-16 | WSO2 y Studio F - Assessment Mayo2026-Final.pdf | nula | [EPISTEMIC-VOID] | ALTA |
+| MOD-17 | RFP_CREDI10_2_0.pdf | baja | [VERIFIED-FACT] | ALTA |
 
-> **Modulos de mayor incertidumbre [EPISTEMIC-VOID].** Los modulos cuyo documento fuente tiene cobertura textual baja/nula o esta marcado [EPISTEMIC-VOID] son: **ninguno**. Su estimacion es la mas fragil: la evidencia proviene mayormente de diagramas/PDF escaneados sin capa de texto util, por lo que el SP ajustado debe tratarse como una banda amplia y confirmarse con un spike/PoC antes de comprometer su ola.
+> **Modulos de mayor incertidumbre [EPISTEMIC-VOID].** Los modulos cuyo documento fuente tiene cobertura textual baja/nula o esta marcado [EPISTEMIC-VOID] son: **MOD-01, MOD-02, MOD-03, MOD-04, MOD-05, MOD-06, MOD-07, MOD-08, MOD-09, MOD-10, MOD-11, MOD-12, MOD-13, MOD-14, MOD-15, MOD-16, MOD-17**. Su estimacion es la mas fragil: la evidencia proviene mayormente de diagramas/PDF escaneados sin capa de texto util, por lo que el SP ajustado debe tratarse como una banda amplia y confirmarse con un spike/PoC antes de comprometer su ola.
 
 ### Matriz de riesgo de desfase (probabilidad / impacto)
 

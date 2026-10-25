@@ -8,15 +8,17 @@
 | tamano (bytes) | 180654 |
 | longitud raw | 73018 |
 | longitud limpia | 69197 |
-| ratio de cobertura | 0.38304 |
-| banda de cobertura | alta |
+| ratio de cobertura (crudo, legado) | 0.38304 |
+| caracteres de texto util | 4949 |
+| texto util real (palabras / bytes extraidos) | 7.15% |
+| banda de cobertura (por texto util real) | baja |
 | flag epistemico | [VERIFIED-FACT] |
 | metodo de ingesta | zlib+regex (capa de texto PDF) |
 | sha256 | `75de074b46dab3babd00ecf877816c3fa41fe29558b18de0c640bcdebf1a6b07` |
 
 ## Resumen jerarquico
 
-- Documento 'Llamada predictiva.pdf' (PDF): 69197 caracteres limpios extraidos (zlib+regex), cobertura 'alta', clasificacion [VERIFIED-FACT].
+- Documento 'Llamada predictiva.pdf' (PDF): 69197 caracteres limpios extraidos (zlib+regex), texto util real 7.15%, banda 'baja', clasificacion [VERIFIED-FACT].
 - Seccion 1: FORM AT O DE DES A RR OLLO E I NT E GRAC IO NES Integra ción Ll a ma da P re dic ti va STF GROUP S .A. INFORM AT ICA Py . es-MX CR E DI1 0 S OF TW AR E P ROP IO...
 - Seccion 2: hivo s Ex c el Lo g4 Net - S is tem a de l og g in g Pa trón de Arquitec tu ra P at rón Repos it o ry - B as eCont ext par a ac c es o a dat os P at rón Se rvic...
 - Seccion 3: ip t arR eq ue st .cs : Int erfaz pa ra enc r ipta ci ón Obj e to s de Tra ns fer e nc ia de Da to s (D TO) As ignacionC art e raDTO.cs : Dat os de as ig nac ió...

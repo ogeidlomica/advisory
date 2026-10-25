@@ -188,8 +188,14 @@ class Document:
     raw_length: int = 0
     clean_length: int = 0
     coverage_ratio: float = 0.0           # clean_length / size, bounded [0, 1]
+    # Real useful-text metric: characters belonging to real words (length >= 3
+    # letters, Spanish accents included) over the extracted-text bytes. This is
+    # the HONEST signal that drives the coverage band and the epistemic flag;
+    # raw ``coverage_ratio`` is retained only for transparency.
+    useful_chars: int = 0
+    useful_ratio: float = 0.0             # useful_chars / clean_length, [0, 1]
     coverage_band: str = "nula"           # 'alta' | 'media' | 'baja' | 'nula'
-    epistemic_flag: str = "[EPISTEMIC-VOID]"  # or '[VERIFIED-FACT]'
+    epistemic_flag: str = "[EPISTEMIC-VOID]"  # or '[VERIFIED-FACT]' / '[OCR-EXTRACTED]'
     hierarchical_summary: List[str] = field(default_factory=list)
     key_facts: List["KeyFact"] = field(default_factory=list)
     ingestion_method: str = ""            # how the text/description was obtained

@@ -30,6 +30,12 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence
 
 from engine.corpus import Document, KeyFact
+from engine.ocr import (
+    OCR_EXTRACTED,
+    OCRCapability,
+    detect_ocr_capability,
+    extract_text_via_ocr,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -68,6 +74,36 @@ COVERAGE_BANDS: List[tuple] = [
 # scans) we flag [EPISTEMIC-VOID] honestly.
 MIN_CLEAN_CHARS_FOR_VERIFIED = 400
 
+# --------------------------------------------------------------------------- #
+# REAL useful-text policy (recalibrated banding driver)
+# --------------------------------------------------------------------------- #
+#
+# The legacy ``coverage_ratio`` (clean_length / byte-size) OVERSTATES coverage
+# for image/scan PDFs: the zlib+regex pass emits large volumes of layout noise
+# and single-letter fragments that are not real words. The honest signal is the
+# fraction of the extracted text that is made of REAL WORDS (>= 3 letters,
+# Spanish accents included). We derive the coverage band and the epistemic flag
+# from THIS metric, not from the raw size.
+#
+# A real native text layer sits well above these thresholds; the Credi10 corpus
+# (all image/scan PDFs) lands at ~0.7%-13% useful text, so NONE reach 'alta' and
+# the worst (WSO2 Assessment, API Integrador, Inspektor, ProcesoCorteCartera)
+# fall to 'nula' + [EPISTEMIC-VOID] (OCR pendiente). Recalibrate HERE.
+USEFUL_TEXT_BANDS: List[tuple] = [
+    ("alta", 0.40),   # >= 40% of the extracted text are real words
+    ("media", 0.20),  # >= 20%
+    ("baja", 0.03),   # >= 3% (some usable text; still flagged OCR pendiente)
+]
+
+# Below this useful-text ratio a PDF carries essentially no usable native text:
+# it is an image/scan whose content is only recoverable via OCR. We flag it
+# [EPISTEMIC-VOID] honestly and mark it 'OCR pendiente'. This is the band 'nula'
+# threshold (equal to the lowest band threshold above).
+MIN_USEFUL_RATIO_FOR_TEXT = 0.03
+
+# Regex matching a "real word": a run of >= 3 letters, Spanish accents included.
+_WORD_RE = re.compile(r"[A-Za-zAÁÉÍÓÚÜÑáéíóúüñ]{3,}")
+
 # Token-budget policy: cap per-document key facts and summary chunks so the
 # knowledge base stays bounded while still guaranteeing FULL ingestion of every
 # document (we always record coverage + method for 18/18, even when 0 facts).
@@ -78,6 +114,8 @@ SUMMARY_CHUNK_CHARS = 900
 
 VERIFIED_FACT = "[VERIFIED-FACT]"
 EPISTEMIC_VOID = "[EPISTEMIC-VOID]"
+# [OCR-EXTRACTED] is imported from engine.ocr and re-used for documents whose
+# text was recovered via OCR (never in this engine's environment: no OCR).
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[\.\;\:])\s+|\s{2,}")
 
@@ -94,7 +132,11 @@ def coverage_ratio(clean_length: int, size: int) -> float:
 
 
 def coverage_band(ratio: float, clean_length: int) -> str:
-    """Map a coverage ratio to a band label using ``COVERAGE_BANDS``."""
+    """Map a legacy coverage ratio to a band label using ``COVERAGE_BANDS``.
+
+    Retained for transparency / backwards-compat. The authoritative band is now
+    derived from the useful-text metric via :func:`useful_text_band`.
+    """
     if clean_length <= 0 or ratio <= 0.0:
         return "nula"
     for band, threshold in COVERAGE_BANDS:
@@ -103,16 +145,56 @@ def coverage_band(ratio: float, clean_length: int) -> str:
     return "nula"
 
 
-def epistemic_flag(clean_length: int, kind: str) -> str:
-    """Honest epistemic flag.
+def count_useful_chars(text: str) -> int:
+    """Count characters belonging to real words (>= 3 letters, Spanish accents).
+
+    Deterministic function of the cleaned text; used by the honest useful-text
+    metric. Single/double-letter fragments and layout noise do NOT count.
+    """
+    if not text:
+        return 0
+    return sum(len(m) for m in _WORD_RE.findall(text))
+
+
+def useful_text_ratio(useful_chars: int, clean_length: int) -> float:
+    """Useful-text ratio = useful_chars / extracted-text bytes, bounded [0, 1].
+
+    Deterministic. When there is no extracted text the ratio is 0.0.
+    """
+    if clean_length <= 0:
+        return 0.0
+    return min(1.0, useful_chars / float(clean_length))
+
+
+def useful_text_band(useful_ratio: float, useful_chars: int) -> str:
+    """Map the REAL useful-text ratio to a band using ``USEFUL_TEXT_BANDS``.
+
+    This is the AUTHORITATIVE band: a PDF whose useful text is ~0.2% is NOT
+    'alta'. Below the lowest threshold the band is 'nula'.
+    """
+    if useful_chars <= 0 or useful_ratio <= 0.0:
+        return "nula"
+    for band, threshold in USEFUL_TEXT_BANDS:
+        if useful_ratio >= threshold:
+            return band
+    return "nula"
+
+
+def epistemic_flag(useful_ratio: float, kind: str,
+                   ocr_tag: Optional[str] = None) -> str:
+    """Honest epistemic flag driven by the REAL useful-text metric.
 
     PNGs carry a static human transcription -> treated as [VERIFIED-FACT].
-    PDFs with a substantial clean text layer -> [VERIFIED-FACT]; image-only
-    PDFs with ~no extractable text -> [EPISTEMIC-VOID].
+    If OCR recovered the text -> [OCR-EXTRACTED]. Otherwise a PDF with enough
+    useful native text -> [VERIFIED-FACT]; an image/scan PDF with essentially no
+    usable text -> [EPISTEMIC-VOID] (OCR pendiente). Nothing is fabricated.
     """
     if kind == "png":
         return VERIFIED_FACT
-    return VERIFIED_FACT if clean_length >= MIN_CLEAN_CHARS_FOR_VERIFIED else EPISTEMIC_VOID
+    if ocr_tag == OCR_EXTRACTED:
+        return OCR_EXTRACTED
+    return (VERIFIED_FACT if useful_ratio >= MIN_USEFUL_RATIO_FOR_TEXT
+            else EPISTEMIC_VOID)
 
 
 def _split_segments(text: str) -> List[str]:
@@ -176,13 +258,22 @@ def build_hierarchical_summary(doc: Document) -> List[str]:
     if len(text.strip()) < 1:
         return [
             f"Documento '{doc.filename}' (PDF): ingerido, pero SIN capa de texto "
-            "extraible (PDF basado en imagen). Cobertura textual nula; marcado "
-            f"{EPISTEMIC_VOID}. No se fabrica contenido.",
+            "extraible (PDF basado en imagen). Texto util real nulo; marcado "
+            f"{EPISTEMIC_VOID}, OCR pendiente. No se fabrica contenido.",
+        ]
+
+    if doc.epistemic_flag == EPISTEMIC_VOID:
+        return [
+            f"Documento '{doc.filename}' (PDF): ingerido; la capa de texto es "
+            f"ruido/fragmentos (texto util real {doc.useful_ratio * 100:.2f}% "
+            "de lo extraido), sin contenido explotable. PDF basado en imagen, "
+            f"marcado {EPISTEMIC_VOID}, OCR pendiente. No se fabrica contenido.",
         ]
 
     summary: List[str] = [
         f"Documento '{doc.filename}' (PDF): {len(text)} caracteres limpios "
-        f"extraidos (zlib+regex), cobertura '{doc.coverage_band}', "
+        f"extraidos (zlib+regex), texto util real "
+        f"{doc.useful_ratio * 100:.2f}%, banda '{doc.coverage_band}', "
         f"clasificacion {doc.epistemic_flag}.",
     ]
     # Top chunk headers: slice the cleaned text into bounded chunks and take the
@@ -196,11 +287,23 @@ def build_hierarchical_summary(doc: Document) -> List[str]:
     return summary
 
 
-def enrich_document(doc: Document) -> Document:
+def enrich_document(doc: Document,
+                    ocr_capability: Optional[OCRCapability] = None) -> Document:
     """Populate the knowledge-base fields of a Document in place (deterministic).
 
     Idempotent: calling it twice yields identical values.
+
+    The coverage band and epistemic flag are driven by the REAL useful-text
+    metric (real words / extracted-text bytes). For PDFs whose useful text is
+    below ``MIN_USEFUL_RATIO_FOR_TEXT`` we consult the OCR adapter: if a real
+    engine is available it recovers the text and tags it [OCR-EXTRACTED]; when
+    no engine is available (this environment) the native (low/empty) text is
+    kept UNCHANGED and the ingestion method becomes the honest 'OCR pendiente'
+    label, so output stays byte-identical except for the honest columns.
     """
+    cap = ocr_capability if ocr_capability is not None else detect_ocr_capability()
+    ocr_tag: Optional[str] = None
+
     raw_length = int(doc.metadata.get("raw_length", 0)) if doc.kind == "pdf" else 0
     if doc.kind == "pdf":
         clean_length = len(doc.extracted_text or "")
@@ -211,28 +314,63 @@ def enrich_document(doc: Document) -> Document:
         raw_length = clean_length
         doc.ingestion_method = "transcripcion estatica PNG (sin OCR)"
 
+    # Real useful-text metric (authoritative driver of band + flag).
+    source_text = doc.extracted_text if doc.kind == "pdf" else doc.description
+    useful_chars = count_useful_chars(source_text or "")
+    useful_ratio = useful_text_ratio(useful_chars, clean_length)
+
+    # When a PDF carries essentially no usable native text, consult OCR.
+    if doc.kind == "pdf" and useful_ratio < MIN_USEFUL_RATIO_FOR_TEXT:
+        if cap.available:
+            # Real engine present: recover text and re-measure from it.
+            ocr_text, tag = extract_text_via_ocr(doc.path, cap)
+            if tag == OCR_EXTRACTED and ocr_text:
+                doc.extracted_text = ocr_text
+                clean_length = len(ocr_text)
+                useful_chars = count_useful_chars(ocr_text)
+                useful_ratio = useful_text_ratio(useful_chars, clean_length)
+                ocr_tag = OCR_EXTRACTED
+                doc.ingestion_method = (
+                    f"OCR [OCR-EXTRACTED] (motor {cap.engine})"
+                )
+                source_text = ocr_text
+        else:
+            # Honest degradation: no engine. Keep native text UNCHANGED (so the
+            # byte output stays stable) and record the pending method.
+            doc.ingestion_method = (
+                "OCR pendiente (motor no disponible en este entorno)"
+            )
+
     doc.raw_length = raw_length
     doc.clean_length = clean_length
     doc.coverage_ratio = coverage_ratio(clean_length, doc.size)
-    doc.coverage_band = coverage_band(doc.coverage_ratio, clean_length)
-    doc.epistemic_flag = epistemic_flag(clean_length, doc.kind)
+    doc.useful_chars = useful_chars
+    doc.useful_ratio = useful_ratio
+    doc.coverage_band = useful_text_band(useful_ratio, useful_chars)
+    doc.epistemic_flag = epistemic_flag(useful_ratio, doc.kind, ocr_tag)
 
-    source_text = doc.extracted_text if doc.kind == "pdf" else doc.description
     doc.key_facts = extract_key_facts(source_text or "", doc.filename)
     doc.hierarchical_summary = build_hierarchical_summary(doc)
     # Keep metadata coverage mirror in sync for downstream backwards-compat.
     doc.metadata["raw_length"] = raw_length
     doc.metadata["clean_length"] = clean_length
     doc.metadata["coverage_ratio"] = doc.coverage_ratio
+    doc.metadata["useful_chars"] = useful_chars
+    doc.metadata["useful_ratio"] = useful_ratio
     doc.metadata["coverage_band"] = doc.coverage_band
     doc.metadata["epistemic_flag"] = doc.epistemic_flag
     return doc
 
 
 def enrich_corpus(documents: Sequence[Document]) -> List[Document]:
-    """Enrich every document (full 18-doc ingestion), sorted by filename."""
+    """Enrich every document (full 18-doc ingestion), sorted by filename.
+
+    The OCR capability is probed ONCE here and reused across all documents, so
+    the environment is detected a single time per run (deterministic).
+    """
     ordered = sorted(documents, key=lambda d: d.filename.lower())
-    return [enrich_document(d) for d in ordered]
+    cap = detect_ocr_capability()
+    return [enrich_document(d, cap) for d in ordered]
 
 
 # --------------------------------------------------------------------------- #
@@ -301,19 +439,24 @@ class KnowledgeBase:
             f"({n_pdf} PDF + {n_png} PNG)",
             "- Metodo PDF: `zlib+regex` (capa de texto). Metodo PNG: "
             "transcripcion estatica (sin OCR).",
-            "- Honestidad epistemica: los PDF basados en imagen (sin texto "
-            f"extraible) se marcan `{EPISTEMIC_VOID}`, nunca se fabrican.",
+            "- Banda de cobertura por **texto util real** (palabras reales / "
+            "bytes de texto extraido), no por tamano crudo.",
+            "- Honestidad epistemica: los PDF basados en imagen (sin texto util "
+            f"real) se marcan `{EPISTEMIC_VOID}` y 'OCR pendiente'; el texto "
+            f"recuperado via OCR se marca `{OCR_EXTRACTED}`. Nunca se fabrica.",
             "",
             "## Indice de documentos",
             "",
             "| # | Documento | Tipo | Rol | Tamano (bytes) | Raw | Limpio | "
-            "Cobertura | Flag | sha256 (12) |",
-            "| --- | --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |",
+            "Texto util | Cobertura | Flag | sha256 (12) |",
+            "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- | "
+            "--- |",
         ]
         for i, d in enumerate(self.documents, start=1):
             lines.append(
                 f"| {i} | {d.filename} | {d.kind} | {d.role} | {d.size} | "
-                f"{d.raw_length} | {d.clean_length} | {d.coverage_band} | "
+                f"{d.raw_length} | {d.clean_length} | "
+                f"{d.useful_ratio * 100:.2f}% | {d.coverage_band} | "
                 f"{d.epistemic_flag} | `{d.sha256[:12]}` |"
             )
         counts = self.band_counts()
@@ -352,8 +495,11 @@ class KnowledgeBase:
             f"| tamano (bytes) | {doc.size} |",
             f"| longitud raw | {doc.raw_length} |",
             f"| longitud limpia | {doc.clean_length} |",
-            f"| ratio de cobertura | {doc.coverage_ratio:.5f} |",
-            f"| banda de cobertura | {doc.coverage_band} |",
+            f"| ratio de cobertura (crudo, legado) | {doc.coverage_ratio:.5f} |",
+            f"| caracteres de texto util | {doc.useful_chars} |",
+            f"| texto util real (palabras / bytes extraidos) | "
+            f"{doc.useful_ratio * 100:.2f}% |",
+            f"| banda de cobertura (por texto util real) | {doc.coverage_band} |",
             f"| flag epistemico | {doc.epistemic_flag} |",
             f"| metodo de ingesta | {doc.ingestion_method} |",
             f"| sha256 | `{doc.sha256}` |",
@@ -411,35 +557,65 @@ class KnowledgeBase:
         n_pdf = sum(1 for d in self.documents if d.kind == "pdf")
         n_png = sum(1 for d in self.documents if d.kind == "png")
         n_void = sum(1 for d in self.documents if d.epistemic_flag == EPISTEMIC_VOID)
+        n_pending = sum(1 for d in self.documents
+                        if "OCR pendiente" in d.ingestion_method)
+        n_ocr = sum(1 for d in self.documents
+                    if d.epistemic_flag == OCR_EXTRACTED)
+        cap = detect_ocr_capability()
         lines = [
             "# Checklist de cobertura del corpus (18/18)",
             "",
             "Politica **complete-corpus-ingestion**: se verifica que CADA "
             "documento del corpus fue procesado (sin muestreo). Para cada "
-            "documento se registra el metodo de procesamiento, la banda de "
-            "cobertura textual y un flag epistemico honesto.",
+            "documento se registra el metodo de procesamiento, el porcentaje de "
+            "**texto util real**, la banda de cobertura y un flag epistemico "
+            "honesto.",
+            "",
+            "> **Nota de metodo (honestidad epistemica):** la banda de cobertura "
+            "ahora se calcula a partir del **texto util real** = caracteres en "
+            "palabras reales (>= 3 letras, con acentos) / bytes de texto "
+            "extraido, **no** a partir del tamano crudo del texto extraido. El "
+            "metodo anterior (texto_limpio/tamano) SOBRESTIMABA la cobertura de "
+            "los PDF basados en imagen.",
+            "",
+            "> **OCR en este entorno:** " + (
+                f"motor OCR disponible ({cap.engine}); el texto recuperado se "
+                "marca `[OCR-EXTRACTED]`."
+                if cap.available else
+                "NO hay motor OCR disponible (ni pytesseract/PIL/fitz ni "
+                "tesseract/ocrmypdf/pdfimages/pdftoppm, y sin red para "
+                "instalarlos). Degradacion honesta: los PDF basados en imagen "
+                "quedan como **pendiente-OCR** y `[EPISTEMIC-VOID]`; **no se "
+                "fabrica texto**."
+            ),
             "",
             f"## Veredicto de ingesta: {self.total}/{self.total} documentos "
             "procesados (sin muestreo)",
             "",
             f"- PDF procesados (zlib+regex): **{n_pdf}**",
             f"- PNG transcritos (sin OCR): **{n_png}**",
-            f"- Documentos marcados `{EPISTEMIC_VOID}` (sin texto util, "
+            f"- Documentos recuperados via OCR `{OCR_EXTRACTED}`: **{n_ocr}**",
+            f"- Documentos **pendiente-OCR** (PDF basado en imagen, texto util "
+            f"insuficiente): **{n_pending}**",
+            f"- Documentos marcados `{EPISTEMIC_VOID}` (sin texto util real, "
             f"registrados honestamente): **{n_void}**",
             "",
-            "| # | Documento | Procesado | Metodo | Banda | Flag |",
-            "| --- | --- | --- | --- | --- | --- |",
+            "| # | Documento | Procesado | Metodo | Texto util real | Banda | "
+            "Flag |",
+            "| --- | --- | --- | --- | ---: | --- | --- |",
         ]
         for i, d in enumerate(self.documents, start=1):
+            method = self._method_label(d)
             lines.append(
-                f"| {i} | {d.filename} | si | {d.ingestion_method} | "
-                f"{d.coverage_band} | {d.epistemic_flag} |"
+                f"| {i} | {d.filename} | si | {method} | "
+                f"{d.useful_ratio * 100:.2f}% | {d.coverage_band} | "
+                f"{d.epistemic_flag} |"
             )
         counts = self.band_counts()
         processed = sum(1 for _ in self.documents)
         lines += [
             "",
-            "## Resumen de cobertura",
+            "## Resumen de cobertura (por texto util real)",
             "",
             "| Banda | Documentos |",
             "| --- | ---: |",
@@ -450,10 +626,24 @@ class KnowledgeBase:
             "",
             f"**Aserto:** {processed} de {self.total} documentos procesados "
             f"({'OK' if processed == self.total else 'INCOMPLETO'}). "
-            "No se omitio ningun documento (cobertura total, sin muestreo).",
+            "No se omitio ningun documento (cobertura total, sin muestreo). "
+            "Las bandas reflejan **texto util real**: un PDF basado en imagen ya "
+            "no se reporta como 'alta'; queda 'baja'/'nula' con nota "
+            "'OCR pendiente'.",
             "",
         ]
         return "\n".join(lines) + "\n"
+
+    @staticmethod
+    def _method_label(doc: Document) -> str:
+        """Short, honest processing-method label for the checklist."""
+        if doc.kind == "png":
+            return "transcripcion estatica PNG (sin OCR)"
+        if doc.epistemic_flag == OCR_EXTRACTED:
+            return "[OCR-EXTRACTED]"
+        if "OCR pendiente" in doc.ingestion_method:
+            return "pendiente-OCR"
+        return "texto nativo (zlib+regex)"
 
     def write(self, kb_dir: str) -> List[str]:
         """Render the knowledge base to ``kb_dir`` deterministically.
