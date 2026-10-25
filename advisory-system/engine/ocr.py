@@ -28,6 +28,7 @@ clients / later features can recalibrate them without touching the logic.
 
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
@@ -43,9 +44,22 @@ from typing import Dict, List, Optional, Tuple
 OCR_EXTRACTED = "[OCR-EXTRACTED]"
 EPISTEMIC_VOID = "[EPISTEMIC-VOID]"
 
-# Minimum per-page OCR confidence (0..100) below which recovered text is treated
-# as unreliable. Declarative knob; only consulted when a real engine runs.
+# Minimum per-word/per-page OCR confidence (0..100) below which recovered text
+# is treated as unreliable and DISCARDED. Declarative knob; only consulted when
+# a real engine runs. Text whose confidence falls below this bar is dropped so
+# low-quality OCR never pollutes the knowledge base with unreliable content.
 OCR_CONFIDENCE_THRESHOLD = 60
+
+# Hard wall-clock timeout (seconds) for any OCR subprocess invocation
+# (ocrmypdf / tesseract / rasterizers). A hung or pathologically slow engine
+# must DEGRADE to "no text" rather than block the whole advisory pipeline.
+OCR_SUBPROCESS_TIMEOUT = 300
+
+# File extensions we treat as standalone raster images that can be OCR'd
+# directly (useful for the architecture diagrams in future corpora), as opposed
+# to PDFs that must be rasterized page by page first.
+_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",
+                     ".webp")
 
 # Stable ingestion-method labels. These strings are part of the deterministic
 # output; do NOT make them depend on timestamps, hostnames or randomness.
@@ -184,8 +198,14 @@ def extract_text_via_ocr(path: str,
     text = _run_engine(cap.engine, path)
     if text:
         return text, OCR_EXTRACTED
-    # Engine present but produced nothing usable -> honest void, no fabrication.
+    # Engine present but produced nothing usable (or all pages fell below the
+    # confidence threshold) -> honest void, no fabrication.
     return "", EPISTEMIC_VOID
+
+
+def _is_image_file(path: str) -> bool:
+    """Return True when ``path`` is a standalone raster image (PNG/JPG/...)."""
+    return os.path.splitext(path)[1].lower() in _IMAGE_EXTENSIONS
 
 
 def _run_engine(engine: Optional[str], path: str) -> str:
@@ -193,10 +213,16 @@ def _run_engine(engine: Optional[str], path: str) -> str:
 
     Isolated so the extraction entrypoint stays simple and so each engine's
     optional imports happen lazily (only when that engine was actually found).
-    Any failure degrades to '' (never fabricates). Not exercised in an
-    environment without OCR.
+    Any failure (including a subprocess timeout) degrades to '' (never
+    fabricates). Not exercised in an environment without OCR.
+
+    A standalone image file (PNG/JPG/...) is OCR'd directly regardless of the
+    PDF-oriented engine, so the capability can also recover text from the
+    architecture diagrams in future corpora, not only from PDFs.
     """
     try:
+        if _is_image_file(path):
+            return _ocr_image_file(engine, path)
         if engine == "pytesseract":
             return _ocr_pytesseract(path)
         if engine == "ocrmypdf":
@@ -204,51 +230,164 @@ def _run_engine(engine: Optional[str], path: str) -> str:
         if engine in ("pdfimages+tesseract", "pdftoppm+tesseract"):
             return _ocr_rasterize_then_tesseract(engine, path)
     except Exception:
+        # Any engine error (missing optional module, broken file, subprocess
+        # failure, timeout) degrades to no text; the pipeline is never aborted.
         return ""
     return ""
 
 
-def _ocr_pytesseract(path: str) -> str:  # pragma: no cover - needs OCR engine
-    """Rasterize ``path`` and OCR each page with pytesseract/Tesseract.
+# --------------------------------------------------------------------------- #
+# Confidence filtering (shared by the real engine paths)
+# --------------------------------------------------------------------------- #
 
-    Imports pytesseract/PIL (and optionally fitz) lazily. Only reachable when
-    the capability probe confirmed the engine is installed.
+def _pytesseract_text_above_confidence(image, pytesseract  # type: ignore
+                                       ) -> str:  # pragma: no cover - needs OCR
+    """Return the OCR text of ``image`` keeping only words at/above threshold.
+
+    Uses ``image_to_data`` so each recognised word carries a confidence score;
+    words below ``OCR_CONFIDENCE_THRESHOLD`` are discarded (low-quality OCR must
+    never be promoted to decision-grade text). Falls back to plain
+    ``image_to_string`` only if the structured call is unavailable.
+    """
+    try:
+        data = pytesseract.image_to_data(
+            image, output_type=pytesseract.Output.DICT)
+    except Exception:
+        return pytesseract.image_to_string(image)
+    words = data.get("text", [])
+    confs = data.get("conf", [])
+    kept: List[str] = []
+    for word, conf in zip(words, confs):
+        if not word or not word.strip():
+            continue
+        try:
+            conf_val = float(conf)
+        except (TypeError, ValueError):
+            conf_val = -1.0
+        # Tesseract emits conf == -1 for non-text blocks; drop those too.
+        if conf_val >= OCR_CONFIDENCE_THRESHOLD:
+            kept.append(word.strip())
+    return " ".join(kept)
+
+
+def _ocr_image_file(engine: Optional[str], path: str
+                    ) -> str:  # pragma: no cover - needs OCR engine
+    """OCR a single standalone image file (PNG/JPG/...).
+
+    Prefers pytesseract (with confidence filtering) via PIL; if pytesseract is
+    not importable but the ``tesseract`` binary is on PATH, shells out to it.
+    Lazy imports only. Only reachable when a capability was detected.
+    """
+    try:
+        import pytesseract  # type: ignore
+        from PIL import Image  # type: ignore
+        with Image.open(path) as img:
+            return _pytesseract_text_above_confidence(img, pytesseract).strip()
+    except Exception:
+        pass
+    # Binary fallback: tesseract CLI straight on the image file.
+    if shutil.which("tesseract"):
+        import subprocess
+        res = subprocess.run(
+            ["tesseract", path, "stdout"],
+            check=True, capture_output=True, text=True,
+            timeout=OCR_SUBPROCESS_TIMEOUT,
+        )
+        return res.stdout.strip()
+    return ""
+
+
+def _ocr_pytesseract(path: str) -> str:  # pragma: no cover - needs OCR engine
+    """Rasterize a PDF and OCR each page with pytesseract/Tesseract.
+
+    Imports pytesseract/PIL (and optionally fitz) lazily. Prefers PyMuPDF
+    (``fitz``) for rasterization; when it is absent it falls back to the
+    pdftoppm/pdfimages CLI rasterizers + PIL so a plain pytesseract+tesseract
+    install still works on raw PDFs. Per-page confidence filtering is applied.
+    Only reachable when the capability probe confirmed the engine is installed.
     """
     import pytesseract  # type: ignore
 
-    chunks: List[str] = []
+    # Preferred path: PyMuPDF rasterizes each page to a PIL image in-process.
     try:
         import fitz  # type: ignore  (PyMuPDF)
         from PIL import Image  # type: ignore
         import io
 
+        chunks: List[str] = []
         doc = fitz.open(path)
-        for page in doc:
-            pix = page.get_pixmap()
-            img = Image.open(io.BytesIO(pix.tobytes("png")))
-            chunks.append(pytesseract.image_to_string(img))
+        try:
+            for page in doc:
+                pix = page.get_pixmap()
+                with Image.open(io.BytesIO(pix.tobytes("png"))) as img:
+                    chunks.append(
+                        _pytesseract_text_above_confidence(img, pytesseract))
+        finally:
+            doc.close()
+        text = "\n".join(c for c in chunks if c).strip()
+        if text:
+            return text
     except Exception:
-        # No rasterizer module available for a raw PDF; return what we have.
+        # PyMuPDF missing or failed -> try the CLI rasterizer fallback below.
+        pass
+
+    # Fallback: rasterize with pdftoppm/pdfimages (whichever is on PATH) and OCR
+    # each page image via pytesseract+PIL. Keeps pytesseract usable without fitz.
+    return _ocr_pdf_via_cli_rasterizer_and_pytesseract(path, pytesseract)
+
+
+def _ocr_pdf_via_cli_rasterizer_and_pytesseract(
+        path: str, pytesseract) -> str:  # pragma: no cover - needs OCR engine
+    """Rasterize a PDF via pdftoppm/pdfimages CLI then OCR with pytesseract+PIL.
+
+    Confidence filtering applied per page. Lazy imports; bounded by timeout.
+    """
+    from PIL import Image  # type: ignore
+    import subprocess
+    import tempfile
+    import glob
+
+    rasterizer = None
+    if shutil.which("pdftoppm"):
+        rasterizer = "pdftoppm"
+    elif shutil.which("pdfimages"):
+        rasterizer = "pdfimages"
+    if rasterizer is None:
+        return ""
+
+    with tempfile.TemporaryDirectory() as tmp:
+        prefix = os.path.join(tmp, "page")
+        subprocess.run(
+            [rasterizer, "-png", path, prefix],
+            check=True, timeout=OCR_SUBPROCESS_TIMEOUT,
+        )
+        images = sorted(glob.glob(prefix + "*.png"))
+        chunks: List[str] = []
+        for img_path in images:
+            with Image.open(img_path) as img:
+                chunks.append(
+                    _pytesseract_text_above_confidence(img, pytesseract))
         return "\n".join(c for c in chunks if c).strip()
-    return "\n".join(c for c in chunks if c).strip()
 
 
 def _ocr_ocrmypdf(path: str) -> str:  # pragma: no cover - needs OCR engine
     """Run ocrmypdf to add a text layer, then re-extract that layer.
 
-    Only reachable when the capability probe confirmed ocrmypdf is installed.
+    Runs under a hard timeout; on any failure (non-zero exit, timeout) returns
+    '' so the pipeline degrades instead of crashing. Only reachable when the
+    capability probe confirmed ocrmypdf is installed.
     """
     import subprocess
     import tempfile
-    import os as _os
 
+    # Lazy import of the native extractor so the module imports with stdlib only.
     from engine.corpus import extract_pdf_text, clean_text
 
     with tempfile.TemporaryDirectory() as tmp:
-        out = _os.path.join(tmp, "ocr.pdf")
+        out = os.path.join(tmp, "ocr.pdf")
         subprocess.run(
             ["ocrmypdf", "--force-ocr", "--quiet", path, out],
-            check=True,
+            check=True, timeout=OCR_SUBPROCESS_TIMEOUT,
         )
         return clean_text(extract_pdf_text(out))
 
@@ -257,27 +396,28 @@ def _ocr_rasterize_then_tesseract(engine: str, path: str
                                   ) -> str:  # pragma: no cover - needs OCR engine
     """Rasterize a PDF (pdfimages or pdftoppm) then OCR the images via tesseract.
 
-    Only reachable when the capability probe confirmed the rasterizer and the
-    tesseract binary are installed.
+    Each subprocess runs under a hard timeout. Only reachable when the
+    capability probe confirmed the rasterizer and the tesseract binary are
+    installed.
     """
     import subprocess
     import tempfile
     import glob
-    import os as _os
 
+    rasterizer = "pdfimages" if engine.startswith("pdfimages") else "pdftoppm"
     with tempfile.TemporaryDirectory() as tmp:
-        prefix = _os.path.join(tmp, "page")
-        if engine.startswith("pdfimages"):
-            subprocess.run(["pdfimages", "-png", path, prefix], check=True)
-            images = sorted(glob.glob(prefix + "*.png"))
-        else:  # pdftoppm
-            subprocess.run(["pdftoppm", "-png", path, prefix], check=True)
-            images = sorted(glob.glob(prefix + "*.png"))
+        prefix = os.path.join(tmp, "page")
+        subprocess.run(
+            [rasterizer, "-png", path, prefix],
+            check=True, timeout=OCR_SUBPROCESS_TIMEOUT,
+        )
+        images = sorted(glob.glob(prefix + "*.png"))
         chunks: List[str] = []
         for img in images:
             res = subprocess.run(
                 ["tesseract", img, "stdout"],
                 check=True, capture_output=True, text=True,
+                timeout=OCR_SUBPROCESS_TIMEOUT,
             )
             chunks.append(res.stdout)
         return "\n".join(c for c in chunks if c).strip()

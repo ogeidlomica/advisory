@@ -274,12 +274,38 @@ ocrmypdf, pdfimages, pdftoppm) y modulos via `try/except ImportError`
   `('', '[EPISTEMIC-VOID]')`, **nunca fabrica texto**, mantiene el texto nativo
   sin cambios (salida byte-identica) y registra el metodo 'OCR pendiente (motor
   no disponible en este entorno)'. La capacidad OCR queda **lista y probada**
-  (incluida la ruta 'con motor' via un stub/fake en las pruebas), aunque no se
+  (incluida la ruta 'con motor' via stubs/fakes en las pruebas), aunque no se
   ejecute un binario real aqui.
+
+Rutas de motor **reales y robustas** (listas para produccion):
+
+- **Imports perezosos.** `pytesseract`/`PIL`/`fitz` se importan **solo** dentro
+  de la funcion del motor cuando este fue detectado, nunca a nivel de modulo:
+  `engine/ocr.py` importa con **stdlib pura** en cualquier entorno.
+- **pytesseract.** Rasteriza cada pagina del PDF con **PyMuPDF (`fitz`)** en
+  proceso; si `fitz` falta, cae a los rasterizadores CLI `pdftoppm`/`pdfimages`
+  + `PIL`. Aplica **filtro de confianza por palabra** (`image_to_data`,
+  `OCR_CONFIDENCE_THRESHOLD`), descartando el texto de baja confianza.
+- **ocrmypdf.** Agrega una capa de texto via subproceso y re-extrae con el
+  extractor nativo. **pdfimages/pdftoppm + tesseract.** Rasteriza y OCR-ea por
+  pagina via CLI. Todas las invocaciones corren bajo un **timeout** duro
+  (`OCR_SUBPROCESS_TIMEOUT`); cualquier fallo/cuelgue **degrada a "sin texto"**
+  sin abortar el pipeline.
+- **Imagenes sueltas.** La capacidad tambien OCR-ea un **PNG/JPG/TIFF** pasado
+  directamente (util para los 3 diagramas de arquitectura en futuros corpus),
+  no solo PDFs.
+- **Politica de merge.** El OCR es un **fallback**: se consulta solo para
+  documentos bajo `MIN_USEFUL_RATIO_FOR_TEXT`, y su texto **sustituye** la pobre
+  capa nativa (no la duplica). Un PDF con texto nativo suficiente **nunca** va a
+  OCR.
+- **Activacion en produccion:** `apt install tesseract-ocr poppler-utils && pip
+  install pytesseract Pillow` (o `pip install PyMuPDF`), o bien
+  `apt install ocrmypdf`. Sin cambios de codigo: al detectar el motor, los
+  documentos `pendiente-OCR` se procesan y pasan a `[OCR-EXTRACTED]`.
 
 La capacidad se sondea **una sola vez por corrida** (en `enrich_corpus`) y se
 reutiliza en todos los documentos, de modo que el pipeline sigue siendo
-determinista.
+determinista. Es la **capa L2** de la arquitectura `document-extraction-architecture`.
 
 ### Anexo A - Trazabilidad de requisitos (dinamico y reutilizable)
 

@@ -1894,6 +1894,135 @@ class TestOCRAdapter(unittest.TestCase):
         self.assertEqual(doc.epistemic_flag, EPISTEMIC_VOID)
         self.assertIn("OCR pendiente", doc.ingestion_method)
 
+    def test_confidence_threshold_discards_low_confidence_words(self):
+        # The per-word confidence filter must KEEP words at/above the threshold
+        # and DISCARD those below it, WITHOUT depending on a real engine. We
+        # drive _pytesseract_text_above_confidence with a fake pytesseract whose
+        # image_to_data returns a mix of high/low confidence words.
+        from engine.ocr import (
+            _pytesseract_text_above_confidence, OCR_CONFIDENCE_THRESHOLD,
+        )
+
+        class _FakeOutput:
+            DICT = "dict"
+
+        class _FakePyt:
+            Output = _FakeOutput
+
+            @staticmethod
+            def image_to_data(image, output_type=None):
+                # 'arquitectura' and 'microservicios' are confident; 'xq' and
+                # the empty token are noise below the threshold.
+                return {
+                    "text": ["arquitectura", "xq", "microservicios", ""],
+                    "conf": [
+                        OCR_CONFIDENCE_THRESHOLD + 30,   # keep
+                        OCR_CONFIDENCE_THRESHOLD - 40,   # drop (low conf)
+                        OCR_CONFIDENCE_THRESHOLD,        # keep (== threshold)
+                        95,                              # drop (empty text)
+                    ],
+                }
+
+            @staticmethod
+            def image_to_string(image):
+                raise AssertionError("no debe caer al fallback con image_to_data")
+
+        text = _pytesseract_text_above_confidence(object(), _FakePyt())
+        self.assertIn("arquitectura", text)
+        self.assertIn("microservicios", text)
+        self.assertNotIn("xq", text,
+                         "el texto OCR de baja confianza debe descartarse")
+        self.assertEqual(text, "arquitectura microservicios")
+
+    def test_confidence_filter_falls_back_when_no_structured_data(self):
+        # If image_to_data is unavailable, fall back to plain image_to_string.
+        from engine.ocr import _pytesseract_text_above_confidence
+
+        class _FakePyt:
+            @staticmethod
+            def image_to_data(image, output_type=None):
+                raise RuntimeError("no structured output on this build")
+
+            @staticmethod
+            def image_to_string(image):
+                return "texto plano recuperado"
+
+        text = _pytesseract_text_above_confidence(object(), _FakePyt())
+        self.assertEqual(text, "texto plano recuperado")
+
+    def test_standalone_png_is_ocr_dispatched(self):
+        # A standalone image path must be routed to the image OCR path (useful
+        # for the architecture diagrams), not the PDF paths. We stub the image
+        # OCR helper to prove the dispatcher picks it by extension, with a fake
+        # 'available' capability and without any real binary.
+        from engine import ocr
+        from engine.ocr import extract_text_via_ocr, OCRCapability, OCR_EXTRACTED
+        fake_text = "Diagrama rasterizado y recuperado por OCR de prueba."
+        original = ocr._ocr_image_file
+        try:
+            ocr._ocr_image_file = lambda engine, path: fake_text  # type: ignore
+            cap = OCRCapability(available=True, engine="pytesseract",
+                                reason="stub", probed={})
+            text, tag = extract_text_via_ocr("/any/diagram.png", cap)
+            self.assertEqual(text, fake_text)
+            self.assertEqual(tag, OCR_EXTRACTED)
+        finally:
+            ocr._ocr_image_file = original  # type: ignore
+
+    def test_merge_policy_does_not_touch_high_useful_text_pdf(self):
+        # Merge policy: OCR is consulted ONLY for PDFs below the useful-text
+        # threshold. A PDF with a solid native text layer must NOT be sent to
+        # OCR (no duplication of native text), even when an engine is available.
+        # We assert the engine dispatcher is NEVER called for such a document.
+        from engine import ocr
+        from engine.corpus import Document
+        from engine.knowledge import enrich_document, VERIFIED_FACT
+        from engine.ocr import OCRCapability
+
+        native = (
+            "La arquitectura objetivo propone microservicios desacoplados con "
+            "contratos OpenAPI para integrar Siesa, CrossCore y Datacredito, "
+            "garantizando observabilidad, trazabilidad y seguridad extremo a "
+            "extremo en la originacion, el recaudo y la cobranza del negocio."
+        )
+        doc = Document(
+            id="rich", filename="rich.pdf", kind="pdf", role="secondary",
+            path="/any/rich.pdf", size=len(native), sha256="feedface",
+            extracted_text=native,
+        )
+        calls = {"n": 0}
+
+        def _spy(engine, path):
+            calls["n"] += 1
+            return "TEXTO OCR QUE NO DEBE APARECER"
+
+        original_run = ocr._run_engine
+        try:
+            ocr._run_engine = _spy  # type: ignore
+            cap = OCRCapability(available=True, engine="pytesseract",
+                                reason="stub", probed={})
+            enrich_document(doc, cap)
+            self.assertEqual(calls["n"], 0,
+                             "no se debe invocar OCR si el texto nativo basta "
+                             "(sin duplicar texto nativo)")
+            self.assertEqual(doc.extracted_text, native,
+                             "el texto nativo util no se altera con OCR")
+            self.assertEqual(doc.epistemic_flag, VERIFIED_FACT)
+        finally:
+            ocr._run_engine = original_run  # type: ignore
+
+    def test_lazy_third_party_imports_not_at_module_level(self):
+        # The OCR module must import with pure stdlib: no pytesseract/PIL/fitz
+        # at module import time. Proven by importing it fresh and confirming the
+        # module object does not expose those names as attributes.
+        import importlib
+        from engine import ocr as ocr_mod
+        importlib.reload(ocr_mod)
+        for name in ("pytesseract", "PIL", "fitz", "cv2", "numpy"):
+            self.assertFalse(
+                hasattr(ocr_mod, name),
+                f"{name} no debe importarse a nivel de modulo (import perezoso)")
+
 
 class TestUsefulTextMetric(unittest.TestCase):
     """FEAT-001/003: coverage reclassification by REAL useful text."""

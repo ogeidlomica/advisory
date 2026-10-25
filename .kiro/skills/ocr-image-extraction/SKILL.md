@@ -55,13 +55,35 @@ disponible, en este orden:
 
 La deteccion es en **tiempo de ejecucion**: binarios via `shutil.which` y
 modulos via `try/except ImportError`, sin que la ausencia de ninguno provoque un
-error. El orden y la lista son perillas declarativas recalibrables.
+error. El orden y la lista son perillas declarativas recalibrables. Los imports
+de terceros (`pytesseract`, `PIL`, `fitz`) son **perezosos**: ocurren SOLO
+dentro de la funcion del motor cuando este fue detectado, nunca a nivel de
+modulo, para que `engine/ocr.py` importe con **stdlib pura** en cualquier
+entorno.
+
+Cada motor tolera la ausencia de su rasterizador preferido:
+
+- **pytesseract** prefiere **PyMuPDF (`fitz`)** para rasterizar cada pagina del
+  PDF a imagen en proceso; si `fitz` no esta, cae a los rasterizadores CLI
+  **`pdftoppm`/`pdfimages`** + `PIL`, de modo que una instalacion simple
+  `pytesseract`+`tesseract` sigue sirviendo sobre PDFs crudos.
+- La capacidad tambien puede **OCR-ear una imagen suelta** (PNG/JPG/TIFF/...)
+  pasada directamente (util para los diagramas de arquitectura en futuros
+  corpus), no solo PDFs: `_ocr_image_file` usa pytesseract+PIL y, si falta
+  pytesseract pero existe el binario `tesseract`, invoca el CLI.
+- Toda invocacion de subproceso (ocrmypdf/tesseract/rasterizadores) corre bajo
+  un **timeout** duro (`OCR_SUBPROCESS_TIMEOUT`, p. ej. 300 s). Un motor colgado
+  o que falla **degrada a "sin texto"** en vez de abortar el pipeline.
 
 ## 4. Umbral de confianza
 
-Cuando un motor OCR produce texto con confianza por pagina, se descarta el texto
-cuya confianza este por debajo de `OCR_CONFIDENCE_THRESHOLD` (0..100, p. ej.
-60). Es una perilla declarativa; solo se consulta cuando un motor real corre.
+Cuando un motor OCR produce texto con confianza por palabra/pagina, se
+**descarta** el texto cuya confianza este por debajo de
+`OCR_CONFIDENCE_THRESHOLD` (0..100, p. ej. 60). La ruta pytesseract usa
+`image_to_data` para obtener la confianza por palabra y **filtra** las palabras
+bajo el umbral (y descarta los bloques `conf == -1` de no-texto); si esa llamada
+estructurada no esta disponible, cae a `image_to_string`. Es una perilla
+declarativa; solo se consulta cuando un motor real corre.
 
 ## 5. Etiquetas epistemicas (honestidad)
 
@@ -114,17 +136,55 @@ un entorno con motor OCR, el adaptador recuperara el texto y lo marcara
   check: Los vacios no recuperables se marcan [EPISTEMIC-VOID]; nunca se inventan.
 ```
 
-## 8. Implementacion de referencia
+## 8. Politica de merge (fusion con el texto nativo)
+
+El OCR es un **fallback**, no un reemplazo ciego. El adaptador se consulta
+**solo** para los documentos cuyo **texto util nativo** quedo por debajo del
+umbral de utilidad (`MIN_USEFUL_RATIO_FOR_TEXT`). Para un PDF cuya capa de texto
+nativa ya es suficiente, el OCR **nunca se invoca**, de modo que no se duplica
+texto que ya salio nativo. Cuando el OCR si corre y recupera texto de confianza,
+este **sustituye** la pobre capa nativa de ese documento (no se concatenan ambas
+versiones del mismo contenido) y el documento se re-mide por texto util. La
+politica es determinista: dada la misma entrada y el mismo entorno, el resultado
+es byte-identico.
+
+## 9. Activacion en un entorno productivo
+
+La capacidad ya esta **implementada**; en produccion solo hace falta instalar un
+motor (sin cambios de codigo). Opciones tipicas:
+
+```bash
+# Opcion A: Tesseract + pytesseract (+ un rasterizador de PDF)
+apt install tesseract-ocr poppler-utils         # tesseract + pdftoppm/pdfimages
+pip install pytesseract pdf2image Pillow         # o 'pip install PyMuPDF' (fitz)
+
+# Opcion B: ocrmypdf (agrega capa de texto y se re-extrae)
+apt install ocrmypdf
+```
+
+Al detectar el motor, `enrich_document` enviara a OCR los documentos
+`pendiente-OCR`, incorporara el texto marcado `[OCR-EXTRACTED]` y actualizara su
+% de texto util y su banda en el `coverage-checklist.md`, automaticamente.
+
+## 10. Implementacion de referencia
 
 El adaptador stdlib en `advisory-system/engine/ocr.py` implementa esta politica:
 `detect_ocr_capability()` sondea el entorno (binarios via `shutil.which`,
 modulos via `try/except ImportError`) y devuelve un `OCRCapability`
 {`available`, `engine`, `reason`, `probed`}; `extract_text_via_ocr(path, cap)`
-ejecuta el motor disponible y devuelve `(texto, "[OCR-EXTRACTED]")`, o degrada
-honestamente a `("", "[EPISTEMIC-VOID]")` sin fabricar. La integracion vive en
+ejecuta el motor disponible (PDF o imagen suelta) y devuelve
+`(texto, "[OCR-EXTRACTED]")`, o degrada honestamente a `("", "[EPISTEMIC-VOID]")`
+sin fabricar. Los motores reales (`_ocr_pytesseract` con fallback CLI,
+`_ocr_ocrmypdf`, `_ocr_rasterize_then_tesseract`, `_ocr_image_file`) hacen
+imports **perezosos**, aplican el **filtro de confianza** por palabra
+(`_pytesseract_text_above_confidence`) y corren bajo **timeout**; cualquier
+fallo degrada a "sin texto" sin abortar. La integracion vive en
 `engine/knowledge.py` (`enrich_document`): se calcula el **texto util real**, y
 si esta bajo `MIN_USEFUL_RATIO_FOR_TEXT` se consulta el adaptador; la banda de
 cobertura y el flag epistemico se derivan del texto util real (perilla
-`USEFUL_TEXT_BANDS`), no del tamano crudo. Determinista, sin red ni LLM, y
-recalibrable via las perillas de politica (`OCR_ENGINE_PREFERENCE`,
-`OCR_CONFIDENCE_THRESHOLD`, `USEFUL_TEXT_BANDS`, `MIN_USEFUL_RATIO_FOR_TEXT`).
+`USEFUL_TEXT_BANDS`), no del tamano crudo. Esta es la **capa L2** de la
+arquitectura `document-extraction-architecture` (L1 texto nativo + `/ToUnicode`;
+L2 OCR; L3 vision/LLM; L4 NLP/LLM). Determinista, sin red ni LLM, y recalibrable
+via las perillas de politica (`OCR_ENGINE_PREFERENCE`,
+`OCR_CONFIDENCE_THRESHOLD`, `OCR_SUBPROCESS_TIMEOUT`, `USEFUL_TEXT_BANDS`,
+`MIN_USEFUL_RATIO_FOR_TEXT`).
