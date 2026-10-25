@@ -1,7 +1,0 @@
-{
-  "task_id": "task-credi10-three-reports",
-  "task_description": "Transformar el framework/motor/skills Zero-Drift para que `--phase all` genere TRES informes .md separados dentro de advisory-credi10-2.0/, todos deterministas (Python stdlib, sin red ni LLM) y fundamentados en el corpus real de Credi10: (1) PROPUESTA COMERCIAL emitida por Kulgops [perfil generico DOC-ASSUMPTION] con 11 secciones a-k; (2) REPORTE GERENCIAL ejecutivo soporte de la propuesta (alcance/fases/diagnostico/estrategia/riesgos/consideraciones/prerrequisitos); (3) INFORME TECNICO rediseñado a estructura multinivel narrativa (~3 niveles: fase -> tema -> subtema, subcarpeta por fase, mucha prosa/storytelling, integrando el dossier TO-BE), mas un README indice maestro que enlace los 3. Complementar/optimizar los skills declarativos (3 nuevos skills-politica genericos) y afinar roles. Ampliar la suite unittest. Commits locales en feat/advisory-zero-drift-engine; sin push/PR.",
-  "status": "completed",
-  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003", "FEAT-004"],
-  "blocked_reason": null
-}

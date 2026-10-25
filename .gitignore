@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+
+# Internal agent task-tracking scaffolding (not part of the advisory deliverables)
+.agents/
+.scratch/
