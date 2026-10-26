@@ -9,18 +9,18 @@
     {
       "code": "ED",
       "name": "Engagement Director",
-      "scope": "Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio.",
+      "scope": "Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio y del diseno de la oferta comercial que responde a la necesidad del cliente (analisis de oportunidad), gobernado por el skill commercial-opportunity-analysis.",
       "income": "Objetivos estrategicos del cliente, RFP CREDI10 2.0, restricciones de presupuesto y riesgo.",
-      "outcome": "Vision y mandato del engagement, propuesta comercial del servicio, aprobacion del caso de negocio (Fase 6), decisiones Go/No-Go de alto nivel.",
+      "outcome": "Vision y mandato del engagement, propuesta comercial del servicio, analisis de la oportunidad comercial y diseno de oferta que responde a las solicitudes del cliente (checklist de informacion solicitada + contenido de respuesta), aprobacion del caso de negocio (Fase 6), decisiones Go/No-Go de alto nivel.",
       "verifies": [],
       "cell": "Comite de Gobierno"
     },
     {
       "code": "EM",
       "name": "Engagement Manager",
-      "scope": "Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases.",
+      "scope": "Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases. Asegura la correlacion oferta<->advisory<->RFP (matriz de trazabilidad comercial), gobernada por el skill commercial-opportunity-analysis.",
       "income": "Mandato del ED, backlog de fases, estado de entregables y gates.",
-      "outcome": "Plan de ejecucion, coordinacion RACI-V, reporte gerencial ejecutivo (soporte de la propuesta), roadmap y RAID consolidados (Fase 5).",
+      "outcome": "Plan de ejecucion, coordinacion RACI-V, reporte gerencial ejecutivo (soporte de la propuesta), checklist de items/consideraciones/supuestos de la oferta y matriz de trazabilidad comercial que correlaciona cada solicitud del cliente con la seccion de la oferta y el outcome del advisory que la sustenta, roadmap y RAID consolidados (Fase 5).",
       "verifies": ["0"],
       "cell": "Comite de Gobierno"
     },
