@@ -83,6 +83,28 @@ def _collect_documents(report_root: str) -> Tuple[List[Dict], List[Dict]]:
     def add_doc(doc_id: str, md: str) -> None:
         documents.append({"id": doc_id, "markdown": md})
 
+    # --- Commercial / offer: the two separate commercial outcomes --------
+    # Governed by the commercial-opportunity-analysis skill. Embedded as a
+    # top-level nav group with the two outcomes as leaves, in stable order.
+    commercial_children: List[Dict] = []
+    for cid, fname, fallback in (
+        ("c-opp", "0-analisis-oportunidad-comercial.md",
+         "Analisis de oportunidad comercial"),
+        ("c-corr", "0b-checklist-oferta-y-correlacion.md",
+         "Checklist de oferta y correlacion"),
+    ):
+        fpath = os.path.join(report_root, fname)
+        if not os.path.exists(fpath):
+            continue
+        md = _read(fpath)
+        add_doc(cid, md)
+        commercial_children.append(
+            {"id": cid, "title": _first_heading(md, fallback),
+             "kind": "leaf", "children": []})
+    if commercial_children:
+        nav.append({"id": "c0", "title": "Comercial / Oferta",
+                    "kind": "report", "children": commercial_children})
+
     # --- Report 1: commercial proposal -----------------------------------
     p1 = os.path.join(report_root, "1-propuesta-comercial.md")
     md1 = _read(p1)

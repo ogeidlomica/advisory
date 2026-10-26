@@ -63,6 +63,15 @@ El informe tecnico se desagrega a ~3 niveles para que sea facil de leer y navega
 
 El informe tecnico **integra el dossier TO-BE** (`to-be/`) por referencia como la **vista de ejecucion** del mismo diseño (ver su README). Los informes planos por fase (00..06 + 04b) siguen siendo la **vista compacta canonica** de cada fase (gobernada por los gates QG); el informe tecnico es la vista navegable que los reorganiza y enriquece con narrativa.
 
+### Comercial / Oferta (analisis de oportunidad y correlacion)
+
+Antes de la propuesta, el motor genera **dos outcomes comerciales SEPARADOS** (en archivos distintos) gobernados por el skill `commercial-opportunity-analysis` y producidos por el Comite de Gobierno (Engagement Director + Engagement Manager) como experto en **diseno de ofertas comerciales**. COMPLEMENTAN (no duplican) a `commercial-proposal-report` y `requirements-traceability`, y **reutilizan** `extract_requirements` como fuente dinamica de las solicitudes del cliente:
+
+- [`0-analisis-oportunidad-comercial.md`](0-analisis-oportunidad-comercial.md): **Outcome 1** - analisis de la oportunidad, **checklist de la informacion que el cliente solicita** y **contenido desarrollado** de respuesta mapeado a las secciones a-k de la propuesta.
+- [`0b-checklist-oferta-y-correlacion.md`](0b-checklist-oferta-y-correlacion.md): **Outcome 2** - checklist de items a desarrollar, consideraciones, supuestos y la **matriz de trazabilidad comercial** (Solicitud del cliente -> ¿La oferta la responde? -> Outcome del advisory que la sustenta -> Estado Cubierto/Parcial/Pendiente -> Consideracion/Supuesto), una fila por solicitud, con estado honesto (Pendiente -> [EPISTEMIC-VOID]).
+
+Ambos outcomes son **deterministas y dinamicos** (se recalculan si cambia el corpus/RFP) y quedan **embebidos y navegables** en la pagina HTML descargable (`advisory-credi10-2.0.html`, nodo **Comercial / Oferta**).
+
 ### Politicas (skills) que gobiernan los 3 informes
 
 Cada informe esta gobernado por un **skill-politica declarativo** (generico y reutilizable, en `.kiro/skills/`): `commercial-proposal-report` (propuesta comercial), `executive-management-report` (reporte gerencial) y `technical-narrative-multilevel` (informe tecnico multinivel). El dossier de ejecucion lo gobierna `sdlc-project-dossier`.

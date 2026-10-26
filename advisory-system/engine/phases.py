@@ -39,6 +39,17 @@ CATALOG_FILENAME = "04b-catalogo-historias.md"
 # ``phases/commercial_proposal.py``.
 PROPOSAL_FILENAME = "1-propuesta-comercial.md"
 
+# Commercial opportunity analysis (task commercial-opportunity): the TWO
+# SEPARATE outcomes produced by the bid-management / commercial-offer-design
+# expert, governed by the skill ``commercial-opportunity-analysis`` and written
+# by the orchestrator on `--phase all` right after the commercial proposal.
+# Outcome 1 is the opportunity analysis + the checklist of client-requested
+# information + the developed offer content; Outcome 2 is the checklist of items
+# to develop + considerations + assumptions + the commercial traceability
+# matrix. Their builder lives in ``phases/commercial_opportunity.py``.
+COMMERCIAL_OPPORTUNITY_FILENAME = "0-analisis-oportunidad-comercial.md"
+COMMERCIAL_CORRELATION_FILENAME = "0b-checklist-oferta-y-correlacion.md"
+
 # Executive/management report (report 2, task three-reports): the executive
 # support of the commercial proposal (scope, phases, high-level diagnosis,
 # strategy, risks, considerations, prerequisites), written by the orchestrator

@@ -21,6 +21,8 @@ from engine.knowledge import KnowledgeBase
 from engine.model import GoldenThread, Phase, raci_v_for
 from engine.phases import (
     CATALOG_FILENAME,
+    COMMERCIAL_CORRELATION_FILENAME,
+    COMMERCIAL_OPPORTUNITY_FILENAME,
     EXEC_REPORT_FILENAME,
     PHASE_ORDER,
     PROPOSAL_FILENAME,
@@ -29,6 +31,7 @@ from engine.phases import (
 )
 from phases import build_readme
 from phases import catalog as catalog_mod
+from phases import commercial_opportunity as opportunity_mod
 from phases import commercial_proposal as proposal_mod
 from phases import dossier as dossier_mod
 from phases import executive_report as exec_report_mod
@@ -59,6 +62,8 @@ class RunSummary:
     dossier_dir: Optional[str] = None
     dossier_file_count: int = 0
     proposal_path: Optional[str] = None
+    opportunity_path: Optional[str] = None
+    correlation_path: Optional[str] = None
     exec_report_path: Optional[str] = None
     tech_report_dir: Optional[str] = None
     tech_report_file_count: int = 0
@@ -84,6 +89,12 @@ class RunSummary:
             )
         if self.proposal_path:
             out.append(f"[Propuesta Comercial] -> {self.proposal_path}")
+        if self.opportunity_path:
+            out.append(
+                f"[Analisis Oportunidad Comercial] -> {self.opportunity_path}")
+        if self.correlation_path:
+            out.append(
+                f"[Checklist Oferta y Correlacion] -> {self.correlation_path}")
         if self.exec_report_path:
             out.append(f"[Reporte Gerencial] -> {self.exec_report_path}")
         if self.tech_report_dir:
@@ -140,6 +151,12 @@ class AdvisoryOrchestrator:
             # Commercial proposal (report 1): sales document issued by Kulgops,
             # written deterministically from the corpus/roles.
             summary.proposal_path = self._write_commercial_proposal()
+            # Commercial opportunity analysis (two SEPARATE outcomes): the
+            # bid-management / offer-design layer. Placed right after the
+            # proposal so the opportunity analysis can reference its sections.
+            opp_path, corr_path = self._write_commercial_opportunity()
+            summary.opportunity_path = opp_path
+            summary.correlation_path = corr_path
             # Executive/management report (report 2): executive support of the
             # proposal, written deterministically from the engine's sources of
             # truth (phase1/phase3/dossier/KB).
@@ -259,6 +276,18 @@ class AdvisoryOrchestrator:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(body)
         return path
+
+    def _write_commercial_opportunity(self):
+        """Write the two SEPARATE commercial outcomes and return their paths."""
+        paths = opportunity_mod.write(
+            self.out_dir,
+            knowledge_base=self.knowledge_base,
+            roles=self.roles,
+            documents=self.corpus.documents,
+        )
+        opp_path = os.path.join(self.out_dir, COMMERCIAL_OPPORTUNITY_FILENAME)
+        corr_path = os.path.join(self.out_dir, COMMERCIAL_CORRELATION_FILENAME)
+        return opp_path, corr_path
 
     def _write_executive_report(self) -> str:
         body = exec_report_mod.build(

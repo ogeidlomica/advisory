@@ -129,8 +129,8 @@ El engagement lo ejecuta un equipo de **17 roles** organizados en un **Comite de
 
 | Rol | Nombre | Celula / Comite | Alcance |
 | --- | --- | --- | --- |
-| ED | Engagement Director | Comite de Gobierno | Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio. |
-| EM | Engagement Manager | Comite de Gobierno | Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases. |
+| ED | Engagement Director | Comite de Gobierno | Direccion ejecutiva del engagement; patrocina la relacion con el cliente, asegura alineacion estrategica y preside el Comite de Gobierno. Responsable final del caso de negocio y del diseno de la oferta comercial que responde a la necesidad del cliente (analisis de oportunidad), gobernado por el skill commercial-opportunity-analysis. |
+| EM | Engagement Manager | Comite de Gobierno | Gestion operativa del engagement; coordina celulas, plan, tiempos y calidad de entrega. Accountable por defecto de las fases. Asegura la correlacion oferta<->advisory<->RFP (matriz de trazabilidad comercial), gobernada por el skill commercial-opportunity-analysis. |
 | AM | Advisory Manager | Comite de Gobierno | Guardian de calidad AICV-E (Accuracy, Integrity, Congruence, Viability, Epistemic Certainty) y guardian del Hilo Dorado. Gobierna la trazabilidad y ejerce poder de veto sobre cualquier entregable que rompa la cadena. |
 | EA | Lead Enterprise Architect | Celula 1 - Discovery | Arquitectura empresarial; mapea capacidades de negocio, dominios y la relacion entre estrategia y tecnologia (TOGAF/C4). |
 | BA | Lead Business Architect | Celula 1 - Discovery | Arquitectura de negocio; capacidades, cadena de valor y modelo operativo del negocio de credito/originacion. |
