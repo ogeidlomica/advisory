@@ -502,6 +502,19 @@ de lo que pide y desarrolla el contenido de respuesta dentro de la oferta:
    por solicitud extraida, con estado honesto (`Pendiente` + `[EPISTEMIC-VOID]`
    donde el corpus no puede responder).
 
+El `Estado` y la columna *¿La oferta la responde?* son **honestos por
+verificacion real**, no una copia del estado tecnico upstream: el builder
+reconstruye la propuesta (`commercial_proposal.build`) y comprueba que la
+seccion a-k mapeada **existe y esta poblada** y que **aborda los terminos** de
+la solicitud; si falta o no la aborda, la fila se **degrada a `Parcial`** y la
+columna dice `No`/`Parcial` en vez de `Si`. Las solicitudes de **indicadores**
+se declaran `Parcial` porque su respaldo son cifras ROI `[DOC-ASSUMPTION]`, no
+compromisos cerrados. Ademas, cada fila marca su **procedencia** `[RFP]`
+(solicitud formal del RFP, via `requirements_traceability._RFP_NAME_HINTS`) o
+`[CONTEXTO]` (derivada de specs/diagramas/assessments del corpus), con un
+resumen de conteos RFP vs contexto para auditar la cobertura del RFP sin perder
+informacion.
+
 Ambos outcomes son **dinamicos**: las solicitudes del cliente se **reutilizan**
 de `requirements-traceability` (`extract_requirements`), de modo que **otro
 cliente/RFP recalcula** el analisis, el checklist y la matriz sin tocar codigo.

@@ -3055,6 +3055,105 @@ class TestCommercialOpportunity(unittest.TestCase):
         self.assertEqual(corr1, corr2,
                          "Outcome 2 debe ser byte-identico entre renders")
 
+    # -- 9. HONEST status: a request whose offer section is absent is NOT --- #
+    #       Cubierto (regression lock against "always Cubierto").
+    def test_status_not_cubierto_when_offer_section_missing(self):
+        from phases import commercial_opportunity as co
+        from phases import requirements_traceability as rt
+        # Build a Requirement whose upstream status is Cubierto (so the ONLY
+        # thing that can keep it honest is the offer-section check), mapped to
+        # a kind whose proposal section is intentionally absent from `bodies`.
+        req = rt.Requirement(
+            req_id="REQ-001", request="Disenar la arquitectura objetivo",
+            source_filename="RFP_Synthetic.pdf", source_section="Arquitectura",
+            kind="arquitectura",
+            where="Fase 4 diseno TO-BE", status="Cubierto",
+            epistemic_tag=rt.VERIFIED_FACT, note="n/a")
+        empty_bodies = {}  # proposal has NO sections at all
+        rows = co._compute_rows([req], empty_bodies)
+        self.assertEqual(len(rows), 1)
+        self.assertNotEqual(
+            rows[0].status, "Cubierto",
+            "sin seccion de oferta presente el estado NO puede ser Cubierto")
+        self.assertEqual(rows[0].status, "Parcial")
+        self.assertTrue(
+            rows[0].responds.startswith("No"),
+            "'¿La oferta la responde?' debe ser No cuando la seccion falta")
+
+    # -- 10. HONEST status: present + term-matching section keeps Cubierto -- #
+    def test_status_cubierto_when_section_present_and_addresses_request(self):
+        from phases import commercial_opportunity as co
+        from phases import requirements_traceability as rt
+        req = rt.Requirement(
+            req_id="REQ-001", request="Disenar la arquitectura objetivo",
+            source_filename="RFP_Synthetic.pdf", source_section="Arquitectura",
+            kind="arquitectura",
+            where="Fase 4 diseno TO-BE", status="Cubierto",
+            epistemic_tag=rt.VERIFIED_FACT, note="n/a")
+        # kind 'arquitectura' maps to section 'e'; give 'e' a body that mentions
+        # the kind terms so the honest rule keeps Cubierto.
+        bodies = {"e": "Entregamos el diseno de la arquitectura TO-BE con ADRs "
+                       "y entregables verificables."}
+        rows = co._compute_rows([req], bodies)
+        self.assertEqual(rows[0].status, "Cubierto")
+        self.assertTrue(rows[0].responds.startswith("Si"))
+
+    # -- 11. HONEST status: indicator-backed rows are Parcial [DOC-ASSUMPTION]#
+    def test_indicator_request_is_parcial_with_doc_assumption(self):
+        from phases import commercial_opportunity as co
+        from phases import requirements_traceability as rt
+        req = rt.Requirement(
+            req_id="REQ-001",
+            request="Indicadores de retorno: disponibilidad 90% -> 99%",
+            source_filename="RFP_Synthetic.pdf",
+            source_section="Indicadores de retorno", kind="indicadores",
+            where="Fase 6 caso de negocio", status="Cubierto",
+            epistemic_tag=rt.VERIFIED_FACT, note="n/a")
+        # section 'j' (Inversion) present and mentions ROI terms.
+        bodies = {"j": "Inversion de referencia y ROI del caso de negocio "
+                       "[DOC-ASSUMPTION]."}
+        rows = co._compute_rows([req], bodies)
+        self.assertEqual(
+            rows[0].status, "Parcial",
+            "una solicitud de indicadores no puede quedar Cubierto")
+        self.assertIn("[DOC-ASSUMPTION]", rows[0].extra)
+
+    # -- 12. Provenance classification: RFP vs context, exact 5 cols intact - #
+    def test_provenance_rfp_vs_context_and_exact_columns(self):
+        from phases import commercial_opportunity as co
+        from phases import requirements_traceability as rt
+        rfp_req = rt.Requirement(
+            req_id="REQ-001", request="Alcance", source_filename="RFP_X.pdf",
+            source_section="Alcance", kind="alcance", where="Fase 0",
+            status="Cubierto", epistemic_tag=rt.VERIFIED_FACT, note="n/a")
+        ctx_req = rt.Requirement(
+            req_id="REQ-002", request="Diagrama", source_filename="Diagrama.png",
+            source_section="Numeral 1", kind="generico", where="Fase 1",
+            status="Cubierto", epistemic_tag=rt.VERIFIED_FACT, note="n/a")
+        self.assertTrue(co._is_rfp_request(rfp_req))
+        self.assertFalse(co._is_rfp_request(ctx_req))
+        self.assertEqual(co._provenance_marker(rfp_req), "[RFP]")
+        self.assertEqual(co._provenance_marker(ctx_req), "[CONTEXTO]")
+        counts = co._provenance_counts([rfp_req, ctx_req])
+        self.assertEqual(counts, {"rfp": 1, "otros": 1})
+        # The generated matrix keeps the EXACT five column labels and surfaces
+        # provenance markers + an RFP/context summary.
+        self.assertIn(self.MATRIX_HEADER, self.corr)
+        self.assertIn("[RFP]", self.corr)
+        self.assertIn("[CONTEXTO]", self.corr)
+        self.assertIn("Procedencia:", self.corr)
+
+    # -- 13. live matrix never claims Cubierto for an indicator row --------- #
+    def test_live_matrix_indicator_row_not_cubierto(self):
+        # The real Credi10 corpus carries an indicators request; it must render
+        # as Parcial in BOTH outcomes, never Cubierto.
+        for body in (self.opp, self.corr):
+            for line in body.splitlines():
+                if "Indicadores de retorno" in line and line.startswith("|"):
+                    self.assertNotIn(
+                        "| Cubierto |", line,
+                        "la fila de indicadores no debe quedar Cubierto")
+
 
 if __name__ == "__main__":
     unittest.main()

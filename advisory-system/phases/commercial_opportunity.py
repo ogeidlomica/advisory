@@ -35,8 +35,11 @@ corpus/RFP, ambos outcomes se recalculan con las solicitudes del nuevo cliente.
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional, Sequence
+import re
+import unicodedata
+from typing import Dict, List, Optional, Sequence, Tuple
 
+from phases import commercial_proposal as proposal_mod
 from phases import requirements_traceability as rt
 
 
@@ -159,11 +162,168 @@ def _win_theme_for(kind: str) -> str:
     return KIND_WIN_THEME.get(kind, KIND_WIN_THEME["generico"])
 
 
-def _responds(status: str) -> str:
-    """Whether the proposal responds to the request, derived from honest status."""
-    if status == "Pendiente":
+# --------------------------------------------------------------------------- #
+# Verificacion REAL de que la seccion de la oferta responde la solicitud.
+#
+# El skill (seccion 6) exige: nunca declarar `Cubierto` sin seccion de oferta
+# **y** respaldo de outcome del advisory **y** texto util real en la fuente. El
+# estado comercial se deriva por tanto de DOS senales, no de una sola:
+#   (1) el estado upstream de requirements_traceability (texto util + mapeo), y
+#   (2) una verificacion determinista de que la seccion a-k mapeada EXISTE y es
+#       NO VACIA en la propuesta generada (``1-propuesta-comercial.md``).
+# Si la seccion de la oferta no existe o esta vacia, se degrada a `Parcial`
+# (o se declara que la oferta NO la responde todavia), nunca `Cubierto`.
+# --------------------------------------------------------------------------- #
+
+# Palabras clave (normalizadas, sin acentos) por kind. Si la seccion mapeada de
+# la oferta contiene al menos una, se considera que aborda la solicitud por
+# terminos; es una senal adicional, determinista y sin LLM.
+_KIND_SECTION_TERMS: Dict[str, Tuple[str, ...]] = {
+    "objetivos": ("objetivo", "contexto", "negocio", "driver"),
+    "alcance": ("alcance", "discovery", "as-is", "to-be"),
+    "tecnologia": ("tecnolog", "ecosistema", "deuda", "estado del arte"),
+    "datos": ("dato", "modelo", "contrato", "entregable"),
+    "integraciones": ("integ", "contrato", "openapi", "asyncapi", "entregable"),
+    "arquitectura": ("arquitectura", "to-be", "adr", "c4", "diseno"),
+    "funcional": ("historia", "gherkin", "hu", "entregable", "funcional"),
+    "operacion": ("metodolog", "operacion", "cambio", "fase", "gate"),
+    "tecnico": ("tecnic", "to-be", "adr", "diseno", "entregable"),
+    "informes": ("informe", "entregable", "dossier", "reporte"),
+    "indicadores": ("inversion", "roi", "caso de negocio", "indicador"),
+    "evaluacion": ("estrategia", "quality gate", "qg-", "criterio",
+                   "evaluacion"),
+    "roadmap": ("cronograma", "ola", "gantt", "roadmap", "estimacion"),
+    "generico": ("alcance", "servicio", "advisory", "specs"),
+}
+
+
+def _normalize_terms(text: str) -> str:
+    """Lowercase + strip accents so term checks are robust to tildes."""
+    stripped = "".join(
+        c for c in unicodedata.normalize("NFD", text)
+        if unicodedata.category(c) != "Mn"
+    )
+    return stripped.lower()
+
+
+def _proposal_section_bodies(proposal_md: str) -> Dict[str, str]:
+    """Parse ``## a..k`` section bodies from the generated proposal.
+
+    Returns ``{letter: body_text}`` for every ``## a. ...`` through
+    ``## k. ...`` heading found, where ``body_text`` is everything until the
+    next ``## `` heading. Deterministic: pure text scan, stable order.
+    """
+    bodies: Dict[str, str] = {}
+    lines = proposal_md.splitlines()
+    current: Optional[str] = None
+    buf: List[str] = []
+    heading_re = re.compile(r"^##\s+([a-k])\.\s")
+    for line in lines:
+        m = heading_re.match(line.strip())
+        if m:
+            if current is not None:
+                bodies[current] = "\n".join(buf).strip()
+            current = m.group(1)
+            buf = []
+        elif current is not None:
+            buf.append(line)
+    if current is not None:
+        bodies[current] = "\n".join(buf).strip()
+    return bodies
+
+
+def _build_proposal_md(knowledge_base=None, roles=None) -> str:
+    """Render the proposal markdown deterministically for section checks.
+
+    Reuses ``commercial_proposal.build`` (the single source of the a-k offer
+    sections); never rewrites it. Degrades gracefully if the builder raises.
+    """
+    try:
+        return proposal_mod.build(knowledge_base=knowledge_base, roles=roles)
+    except Exception:
+        return ""
+
+
+def _section_addresses_request(bodies: Dict[str, str], kind: str
+                               ) -> Tuple[bool, bool]:
+    """Return (section_present_nonempty, section_mentions_kind_terms).
+
+    ``section_present_nonempty``: the mapped a-k section exists in the proposal
+    and has a non-empty body. ``section_mentions_kind_terms``: that body
+    additionally contains at least one term associated with the request kind.
+    """
+    letter = KIND_TO_PROPOSAL_SECTION.get(kind, "b")
+    body = bodies.get(letter, "").strip()
+    present = bool(body)
+    if not present:
+        return (False, False)
+    norm = _normalize_terms(body)
+    terms = _KIND_SECTION_TERMS.get(kind, _KIND_SECTION_TERMS["generico"])
+    mentions = any(_normalize_terms(t) in norm for t in terms)
+    return (True, mentions)
+
+
+def _commercial_status(req: rt.Requirement, bodies: Dict[str, str]
+                       ) -> Tuple[str, str]:
+    """Return the HONEST commercial (status, extra_consideration) for a row.
+
+    Derives the commercial Estado from BOTH the upstream Requirement.status AND
+    a real presence/term check of the mapped proposal section. Never asserts
+    coverage the artifact did not test:
+
+      * Pendiente upstream stays Pendiente ([EPISTEMIC-VOID]); the offer does
+        not respond.
+      * If the mapped offer section is missing or empty in the proposal, the
+        row is downgraded to Parcial (the offer does not yet respond it).
+      * Indicator-backed requests (kind ``indicadores``) are capped at Parcial
+        with a [DOC-ASSUMPTION] consideration: the ROI figures that would back
+        them are themselves assumption-level, so a Cubierto commitment would be
+        over-claimed.
+      * Only when the section exists, is non-empty AND mentions the request's
+        terms, and the upstream status is Cubierto, is Cubierto preserved.
+    """
+    if req.status == "Pendiente":
+        return ("Pendiente", "")
+
+    present, mentions = _section_addresses_request(bodies, req.kind)
+
+    if not present:
+        return ("Parcial",
+                "La seccion de la oferta mapeada no esta presente/poblada en "
+                "`1-propuesta-comercial.md`; se degrada a Parcial hasta "
+                "desarrollarla. [DOC-ASSUMPTION]")
+
+    if req.kind == "indicadores":
+        return ("Parcial",
+                "El respaldo de la oferta son cifras ROI de referencia "
+                "[DOC-ASSUMPTION]; no es un compromiso cerrado de indicadores, "
+                "se declara Parcial.")
+
+    if req.status == "Cubierto" and not mentions:
+        return ("Parcial",
+                "La seccion de la oferta existe pero no aborda explicitamente "
+                "los terminos de la solicitud; mapeo a afinar. [DOC-ASSUMPTION]")
+
+    # Cubierto preserved only with section present + terms + upstream Cubierto.
+    if req.status == "Cubierto":
+        return ("Cubierto", "")
+    return ("Parcial", "")
+
+
+def _responds_label(commercial_status: str, present: bool, kind: str) -> str:
+    """Build the honest ``¿La oferta la responde?`` cell.
+
+    Ties Si/No/Parcial to an actual presence check of the mapped proposal
+    section, not merely to the upstream status.
+    """
+    if commercial_status == "Pendiente":
         return "No (Pendiente)"
-    return "Si"
+    if not present:
+        return "No (seccion por desarrollar)"
+    section = _proposal_section_for(kind)
+    if commercial_status == "Cubierto":
+        return f"Si - {section}"
+    return f"Parcial - {section}"
 
 
 def _rfp_doc_name(reqs: Sequence[rt.Requirement]) -> Optional[str]:
@@ -176,10 +336,68 @@ def _rfp_doc_name(reqs: Sequence[rt.Requirement]) -> Optional[str]:
     return reqs[0].source_filename if reqs else None
 
 
-def _status_counts(reqs: Sequence[rt.Requirement]) -> Dict[str, int]:
-    counts = {"Cubierto": 0, "Parcial": 0, "Pendiente": 0}
+def _is_rfp_request(req: rt.Requirement) -> bool:
+    """Classify a request's provenance as RFP-sourced, deterministically.
+
+    Reuses ``requirements_traceability._RFP_NAME_HINTS`` against the request's
+    source filename (same heuristic ``_looks_like_rfp`` uses on a Document).
+    """
+    lowered = rt._normalize_name(req.source_filename)
+    return any(h in lowered for h in rt._RFP_NAME_HINTS)
+
+
+def _provenance_marker(req: rt.Requirement) -> str:
+    """``[RFP]`` for RFP-sourced requests, ``[CONTEXTO]`` otherwise."""
+    return "[RFP]" if _is_rfp_request(req) else "[CONTEXTO]"
+
+
+def _provenance_counts(reqs: Sequence[rt.Requirement]) -> Dict[str, int]:
+    rfp = sum(1 for r in reqs if _is_rfp_request(r))
+    return {"rfp": rfp, "otros": len(reqs) - rfp}
+
+
+class _Row:
+    """A computed commercial row: upstream request + honest commercial status.
+
+    ``status`` is the HONEST commercial Estado (may differ from the upstream
+    ``req.status`` when the offer section is missing or when the request is
+    indicator-backed). ``present`` records whether the mapped offer section was
+    found non-empty in the proposal, and ``extra`` carries any added honesty
+    consideration.
+    """
+
+    __slots__ = ("req", "status", "present", "mentions", "extra", "responds")
+
+    def __init__(self, req: rt.Requirement, status: str, present: bool,
+                 mentions: bool, extra: str, responds: str):
+        self.req = req
+        self.status = status
+        self.present = present
+        self.mentions = mentions
+        self.extra = extra
+        self.responds = responds
+
+
+def _compute_rows(reqs: Sequence[rt.Requirement],
+                  bodies: Dict[str, str]) -> List[_Row]:
+    """Compute the honest commercial rows shared by BOTH outcomes.
+
+    Single source of truth so Outcome 1 and Outcome 2 never contradict each
+    other on Estado, coverage counts or the Mermaid pies.
+    """
+    rows: List[_Row] = []
     for r in reqs:
-        counts[r.status] = counts.get(r.status, 0) + 1
+        present, mentions = _section_addresses_request(bodies, r.kind)
+        status, extra = _commercial_status(r, bodies)
+        responds = _responds_label(status, present, r.kind)
+        rows.append(_Row(r, status, present, mentions, extra, responds))
+    return rows
+
+
+def _row_status_counts(rows: Sequence[_Row]) -> Dict[str, int]:
+    counts = {"Cubierto": 0, "Parcial": 0, "Pendiente": 0}
+    for row in rows:
+        counts[row.status] = counts.get(row.status, 0) + 1
     return counts
 
 
@@ -229,7 +447,11 @@ def build_opportunity_analysis(documents=None, knowledge_base=None,
     docs, total = _resolve_docs(knowledge_base=knowledge_base,
                                 documents=documents)
     reqs = rt.extract_requirements(docs)
-    counts = _status_counts(reqs)
+    bodies = _proposal_section_bodies(
+        _build_proposal_md(knowledge_base=knowledge_base, roles=roles))
+    rows = _compute_rows(reqs, bodies)
+    counts = _row_status_counts(rows)
+    prov = _provenance_counts(reqs)
     n = len(reqs)
     rfp_name = _rfp_doc_name(reqs)
     docs_line = (f" sobre un corpus de **{total}** documentos"
@@ -271,6 +493,23 @@ def build_opportunity_analysis(documents=None, knowledge_base=None,
         f"**{counts['Cubierto']} Cubierto**, **{counts['Parcial']} Parcial**, "
         f"**{counts['Pendiente']} Pendiente**. " + rfp_line,
         "",
+        f"**Procedencia de las solicitudes:** **{prov['rfp']}** provienen del "
+        f"documento tipo **RFP** (`[RFP]`) y **{prov['otros']}** se derivan de "
+        "otros documentos de contexto/corpus (`[CONTEXTO]`: specs, diagramas, "
+        "assessments). La validacion de cobertura del RFP debe priorizar las "
+        "filas `[RFP]`; las filas `[CONTEXTO]` enriquecen el entendimiento pero "
+        "no son solicitudes formales de la oferta.",
+        "",
+        "**Estado comercial honesto:** el `Estado` **no** se copia del estado "
+        "tecnico upstream; se recalcula verificando que la **seccion de la "
+        "oferta** mapeada EXISTE y esta poblada en "
+        f"[`{PROPOSAL_FILENAME}`]({PROPOSAL_FILENAME}) y que aborda los "
+        "terminos de la solicitud. Si la seccion falta o no la aborda, la fila "
+        "se degrada a **Parcial**; las solicitudes de **indicadores** se "
+        "declaran **Parcial** porque su respaldo son cifras ROI "
+        "`[DOC-ASSUMPTION]`, no compromisos cerrados. Nunca se afirma "
+        "`Cubierto` sin seccion de oferta real.",
+        "",
         "La **necesidad del cliente** (contexto, problema a resolver, valor "
         "esperado, restricciones y criterios de evaluacion) se **deriva del "
         "corpus**: cada solicitud conserva la **cita a su documento fuente**, de "
@@ -300,11 +539,13 @@ def build_opportunity_analysis(documents=None, knowledge_base=None,
         "(`[EPISTEMIC-VOID]`).",
         "",
     ]
-    if reqs:
-        for r in reqs:
-            sym = _CHECK_SYMBOL.get(r.status, " ")
+    if rows:
+        for row in rows:
+            r = row.req
+            sym = _CHECK_SYMBOL.get(row.status, " ")
             parts.append(
-                f"- [{sym}] **{r.req_id}** ({r.status}) {r.request} "
+                f"- [{sym}] **{r.req_id}** ({row.status}) "
+                f"{_provenance_marker(r)} {r.request} "
                 f"_[fuente: {r.citation}]_ {r.epistemic_tag}"
             )
     else:
@@ -323,13 +564,15 @@ def build_opportunity_analysis(documents=None, knowledge_base=None,
         "contenido de respuesta | Estado |",
         "| --- | --- | --- | --- | --- |",
     ]
-    if reqs:
-        for r in reqs:
+    if rows:
+        for row in rows:
+            r = row.req
             section = _proposal_section_for(r.kind).replace("|", "\\|")
             theme = _win_theme_for(r.kind).replace("|", "\\|")
+            marker = _provenance_marker(r)
             parts.append(
-                f"| {r.req_id} | {r.request} | {section} | {theme} | "
-                f"{r.status} |"
+                f"| {r.req_id} {marker} | {r.request} | {section} | {theme} | "
+                f"{row.status} |"
             )
     else:
         parts.append("| - | (sin solicitudes derivables del corpus) | - | - | "
@@ -380,7 +623,11 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
     docs, total = _resolve_docs(knowledge_base=knowledge_base,
                                 documents=documents)
     reqs = rt.extract_requirements(docs)
-    counts = _status_counts(reqs)
+    bodies = _proposal_section_bodies(
+        _build_proposal_md(knowledge_base=knowledge_base, roles=roles))
+    rows = _compute_rows(reqs, bodies)
+    counts = _row_status_counts(rows)
+    prov = _provenance_counts(reqs)
     n = len(reqs)
 
     parts: List[str] = [
@@ -411,7 +658,7 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
         "parcial - `- [ ]` pendiente.",
         "",
     ]
-    parts += _offer_items_checklist(reqs)
+    parts += _offer_items_checklist(rows)
     parts += [
         "",
         "## 2. Consideraciones y supuestos de la oferta",
@@ -434,19 +681,34 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
         "**Pendiente** por falta de texto util en la fuente (OCR/fuente "
         "pendiente); no se promete cobertura sobre ellas | [EPISTEMIC-VOID] |",
         f"| Consideracion | **{counts['Parcial']}** solicitudes son **Parcial**: "
-        "abordables por el advisory con mapeo a afinar al cerrar la elicitacion "
-        "| [DOC-ASSUMPTION] |",
+        "la seccion de la oferta no las aborda aun del todo (incluye las de "
+        "indicadores con respaldo ROI) o el mapeo se afina al cerrar la "
+        "elicitacion | [DOC-ASSUMPTION] |",
+        f"| Consideracion | **{prov['rfp']}** solicitudes provienen del **RFP** "
+        f"(`[RFP]`) y **{prov['otros']}** de documentos de **contexto/corpus** "
+        "(`[CONTEXTO]`); la cobertura del RFP se audita sobre las filas `[RFP]` "
+        "| [VERIFIED-FACT] |",
+        "| Consideracion | El `Estado` se recalcula verificando la seccion de "
+        "la oferta en `1-propuesta-comercial.md` (presencia + terminos), no se "
+        "copia del estado tecnico; nunca se declara Cubierto sin seccion real | "
+        "[VERIFIED-FACT] |",
         "| Restriccion | La etapa ofertada es advisory + specs; no incluye "
         "construccion ni despliegue | [VERIFIED-FACT] |",
         "",
         "## 3. Matriz de trazabilidad comercial (oferta <-> advisory <-> RFP)",
         "",
-        f"Una fila por solicitud extraida (**{n}** en total). Demuestra que "
-        "cada punto del cliente queda respondido por una **seccion de la "
-        "oferta** y **sustentado por un outcome del advisory**, con **estado "
-        "honesto**. Las solicitudes se **reutilizan** de "
-        "`requirements-traceability`; la columna de la oferta mapea a "
-        f"[`{PROPOSAL_FILENAME}`]({PROPOSAL_FILENAME}).",
+        f"Una fila por solicitud extraida (**{n}** en total; **{prov['rfp']}** "
+        f"`[RFP]` + **{prov['otros']}** `[CONTEXTO]`). Demuestra que cada punto "
+        "del cliente queda respondido por una **seccion de la oferta** y "
+        "**sustentado por un outcome del advisory**, con **estado honesto**. El "
+        "`Estado` y la columna *¿La oferta la responde?* se derivan de una "
+        "**verificacion real**: la seccion a-k mapeada debe EXISTIR y estar "
+        f"poblada en [`{PROPOSAL_FILENAME}`]({PROPOSAL_FILENAME}) (y abordar los "
+        "terminos de la solicitud) para declarar `Cubierto`; si no, se degrada "
+        "a `Parcial`. La primera columna marca la **procedencia** de la "
+        "solicitud: `[RFP]` (solicitud formal del RFP) o `[CONTEXTO]` (derivada "
+        "de specs/diagramas/assessments del corpus). Las solicitudes se "
+        "**reutilizan** de `requirements-traceability`.",
         "",
         "| Solicitud del cliente (cita RFP, con nombre de documento) | ¿La "
         "oferta la responde? (seccion de 1-propuesta-comercial.md) | Outcome del "
@@ -454,20 +716,20 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
         "(Cubierto/Parcial/Pendiente) | Consideracion/Supuesto |",
         "| --- | --- | --- | --- | --- |",
     ]
-    if reqs:
-        for r in reqs:
-            cita = f"{r.req_id}: {r.request} [fuente: {r.citation}]".replace(
-                "|", "\\|")
-            responde = _responds(r.status)
-            if responde.startswith("Si"):
-                oferta = f"{responde} - {_proposal_section_for(r.kind)}"
-            else:
-                oferta = responde
-            oferta = oferta.replace("|", "\\|")
+    if rows:
+        for row in rows:
+            r = row.req
+            cita = (f"{_provenance_marker(r)} {r.req_id}: {r.request} "
+                    f"[fuente: {r.citation}]").replace("|", "\\|")
+            oferta = row.responds.replace("|", "\\|")
             where = r.where.replace("|", "\\|")
-            consideracion = f"{r.epistemic_tag} {r.note}".replace("|", "\\|")
+            note_bits = [r.epistemic_tag, r.note]
+            if row.extra:
+                note_bits.append(row.extra)
+            consideracion = " ".join(b for b in note_bits if b).replace(
+                "|", "\\|")
             parts.append(
-                f"| {cita} | {oferta} | {where} | {r.status} | "
+                f"| {cita} | {oferta} | {where} | {row.status} | "
                 f"{consideracion} |"
             )
     else:
@@ -477,7 +739,8 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
         "",
         f"**Resumen de estado:** {n} solicitudes = "
         f"{counts['Cubierto']} Cubierto + {counts['Parcial']} Parcial + "
-        f"{counts['Pendiente']} Pendiente.",
+        f"{counts['Pendiente']} Pendiente. "
+        f"**Procedencia:** {prov['rfp']} [RFP] + {prov['otros']} [CONTEXTO].",
         "",
         "### Cobertura comercial por estado",
         "",
@@ -498,20 +761,20 @@ def build_checklist_and_correlation(documents=None, knowledge_base=None,
     return "\n".join(parts) + "\n"
 
 
-def _offer_items_checklist(reqs: Sequence[rt.Requirement]) -> List[str]:
+def _offer_items_checklist(rows: Sequence["_Row"]) -> List[str]:
     """Deterministic items-to-develop checklist, one per proposal section used.
 
-    The status of each section item is the worst honest status among the
-    requests mapped to it (Pendiente > Parcial > Cubierto), so the checklist
-    never overstates readiness.
+    The status of each section item is the worst HONEST commercial status among
+    the requests mapped to it (Pendiente > Parcial > Cubierto), so the checklist
+    never overstates readiness and stays consistent with the matrix.
     """
     severity = {"Cubierto": 0, "Parcial": 1, "Pendiente": 2}
     by_section: Dict[str, str] = {}
-    for r in reqs:
-        letter = KIND_TO_PROPOSAL_SECTION.get(r.kind, "b")
+    for row in rows:
+        letter = KIND_TO_PROPOSAL_SECTION.get(row.req.kind, "b")
         cur = by_section.get(letter, "Cubierto")
-        if severity[r.status] > severity[cur]:
-            by_section[letter] = r.status
+        if severity[row.status] > severity[cur]:
+            by_section[letter] = row.status
     lines: List[str] = []
     if not by_section:
         lines.append("- [ ] (El corpus no permitio derivar items de oferta).")
