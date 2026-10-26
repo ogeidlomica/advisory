@@ -94,6 +94,15 @@ del cliente, pensadas para reutilizarse en otros contextos/corpus:
   corpus; los dos artefactos obligatorios (checklist marcable + tabla de
   trazabilidad) y la regla de degradacion (Pendiente + `[EPISTEMIC-VOID]` donde
   falta texto util / OCR).
+- **`commercial-opportunity-analysis`** - politica del **analisis de
+  oportunidad y diseno de oferta comercial**: gobierna a un experto en
+  bid-management que analiza la oportunidad desde el corpus, levanta el
+  **checklist de la informacion que el cliente solicita**, desarrolla el
+  **contenido de respuesta** dentro de la oferta y produce la **matriz de
+  trazabilidad comercial** oferta<->advisory<->RFP. **Complementa (no duplica)**
+  a `commercial-proposal-report` y `requirements-traceability`, **reutilizando**
+  `extract_requirements` como fuente unica de las solicitudes del cliente.
+  Produce **dos outcomes en archivos separados** (ver mas abajo).
 - **`document-extraction-architecture`** - politica de la **arquitectura de
   extraccion multicapa** (Anexo B): la estrategia y tactica para **maximizar el
   texto util** de cada documento con una escalera de capas y fallbacks (L1 texto
@@ -464,6 +473,43 @@ Los informes planos por fase (`00..06` + `04b`) se **conservan** como la vista
 compacta canonica de cada fase (gobernada por los gates QG-0..QG-6); el informe
 tecnico es la vista navegable que los reorganiza y enriquece. El `README.md`
 maestro de `../advisory-credi10-2.0/` enlaza los tres informes.
+
+## Analisis de oportunidad y diseno de oferta comercial (dos outcomes)
+
+`phases/commercial_opportunity.py` (stdlib, determinista) genera, dentro de
+`--phase all`, **dos outcomes comerciales en rutas/archivos SEPARADOS** bajo
+`../advisory-credi10-2.0/`, gobernados por el skill
+`commercial-opportunity-analysis`. Es la capa de un **experto en diseno de
+ofertas comerciales** que entiende la necesidad del cliente, hace el checklist
+de lo que pide y desarrolla el contenido de respuesta dentro de la oferta:
+
+1. **Outcome 1 - Analisis de la oportunidad** (`0-analisis-oportunidad-comercial.md`):
+   analisis de la oportunidad (contexto y necesidad del cliente derivados del
+   corpus, priorizando el documento tipo RFP), **checklist marcable de la
+   informacion que el cliente solicita** (`- [x]` / `- [~]` / `- [ ]`, cada item
+   con cita a su documento fuente) y el **contenido desarrollado** (win themes)
+   para responder cada necesidad, **mapeado** a las secciones a-k de la propuesta
+   (`1-propuesta-comercial.md`) sin reescribirla ni contradecir sus cifras.
+2. **Outcome 2 - Checklist de oferta y correlacion**
+   (`0b-checklist-oferta-y-correlacion.md`, ruta separada): **checklist de items
+   a desarrollar** en la oferta, **consideraciones** y **supuestos**
+   (`[DOC-ASSUMPTION]`) y la **matriz de trazabilidad comercial** con las cinco
+   columnas exactas:
+   `Solicitud del cliente (cita RFP, con nombre de documento)` ->
+   `¿La oferta la responde? (seccion de 1-propuesta-comercial.md)` ->
+   `Outcome del advisory que la sustenta (fase/entregable)` ->
+   `Estado (Cubierto/Parcial/Pendiente)` -> `Consideracion/Supuesto`. Una fila
+   por solicitud extraida, con estado honesto (`Pendiente` + `[EPISTEMIC-VOID]`
+   donde el corpus no puede responder).
+
+Ambos outcomes son **dinamicos**: las solicitudes del cliente se **reutilizan**
+de `requirements-traceability` (`extract_requirements`), de modo que **otro
+cliente/RFP recalcula** el analisis, el checklist y la matriz sin tocar codigo.
+El rol comercial existente (Engagement Director / Engagement Manager) se
+**enriquecio** con esta capacidad **sin crear un rol nuevo** (se mantiene el
+invariante de 17 roles). Ambos `.md` quedan **embebidos y navegables en el
+visor HTML descargable** `advisory-credi10-2.0.html` (nodo de navegacion
+**Comercial / Oferta**) y enlazados desde el `README.md` maestro.
 
 ## Reutilizar las politicas con otro corpus/cliente
 

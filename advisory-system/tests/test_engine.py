@@ -2870,5 +2870,191 @@ class TestEvidenceDeltaAndRecoveredGrounding(unittest.TestCase):
             "RS-03 ya no debe afirmar modulos 'solo en imagen' [EPISTEMIC-VOID]")
 
 
+class TestCommercialOpportunity(unittest.TestCase):
+    """FEAT-003: the two SEPARATE commercial outcomes, the governing skill, the
+    roles enrichment, HTML embedding and determinism.
+
+    Mirrors the subprocess-in-setUpClass pattern of ``TestCommercialProposal`` /
+    ``TestRequirementsTraceabilityAnnex``: run ``--phase all`` once, then read
+    the generated artifacts from ``_REPO_ROOT/advisory-credi10-2.0``. The
+    dynamic-over-synthetic-corpus and determinism checks call the
+    ``commercial_opportunity`` render functions directly, exactly as
+    ``TestRequirementsTraceabilityAnnex.test_extraction_is_dynamic_over_synthetic_corpus``
+    does for the traceability annex.
+    """
+
+    OPP_FILENAME = "0-analisis-oportunidad-comercial.md"
+    CORR_FILENAME = "0b-checklist-oferta-y-correlacion.md"
+    SKILL_REL = os.path.join(
+        ".kiro", "skills", "commercial-opportunity-analysis", "SKILL.md")
+
+    # Exact five column labels of the commercial correlation matrix.
+    MATRIX_HEADER = (
+        "| Solicitud del cliente (cita RFP, con nombre de documento) | ¿La "
+        "oferta la responde? (seccion de 1-propuesta-comercial.md) | Outcome del "
+        "advisory que la sustenta (fase/entregable) | Estado "
+        "(Cubierto/Parcial/Pendiente) | Consideracion/Supuesto |"
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        import subprocess
+        cls.out_dir = os.path.join(_REPO_ROOT, "advisory-credi10-2.0")
+        cls.opp_path = os.path.join(cls.out_dir, cls.OPP_FILENAME)
+        cls.corr_path = os.path.join(cls.out_dir, cls.CORR_FILENAME)
+        subprocess.run(
+            [sys.executable, os.path.join(_SYSTEM_DIR, "quickstart.py"),
+             "--phase", "all"],
+            cwd=_REPO_ROOT, check=True, capture_output=True, text=True,
+            timeout=600,
+        )
+        with open(cls.opp_path, encoding="utf-8") as fh:
+            cls.opp = fh.read()
+        with open(cls.corr_path, encoding="utf-8") as fh:
+            cls.corr = fh.read()
+        with open(os.path.join(_REPO_ROOT, cls.SKILL_REL),
+                  encoding="utf-8") as fh:
+            cls.skill = fh.read()
+        html = os.path.join(cls.out_dir, "advisory-credi10-2.0.html")
+        with open(html, encoding="utf-8") as fh:
+            cls.html = fh.read()
+
+    # -- 1. both outcomes exist at their SEPARATE paths --------------------- #
+    def test_both_outcomes_exist_at_separate_paths(self):
+        self.assertTrue(os.path.isfile(self.opp_path),
+                        "Outcome 1 debe existir tras --phase all")
+        self.assertTrue(os.path.isfile(self.corr_path),
+                        "Outcome 2 debe existir tras --phase all")
+        self.assertNotEqual(self.opp_path, self.corr_path,
+                            "los dos outcomes viven en archivos separados")
+
+    # -- 2. Outcome 1: analysis + markable checklist + developed content ---- #
+    def test_outcome1_has_analysis_checklist_and_offer_content(self):
+        self.assertIn("Analisis de la oportunidad", self.opp)
+        self.assertIn("Checklist de la informacion que el cliente solicita",
+                      self.opp)
+        self.assertIn("Contenido desarrollado para responder cada necesidad",
+                      self.opp)
+        # Markable checklist with at least one of the three legal symbols.
+        self.assertTrue(
+            any(sym in self.opp for sym in ("- [x]", "- [~]", "- [ ]")),
+            "Outcome 1 debe tener un checklist marcable")
+        # Developed offer content references proposal sections a..k: at least a
+        # few of the readable section labels must appear.
+        section_labels = [
+            "a. Quienes somos", "b. Alcance del servicio",
+            "c. Contexto de negocio", "d. Metodologia de consultoria",
+            "e. Entregables", "f. Estrategia de consultoria",
+            "g. Equipo de trabajo", "h. Cronograma de trabajo",
+            "i. Supuestos y restricciones", "j. Inversion",
+            "k. Terminos y condiciones",
+        ]
+        present = [lbl for lbl in section_labels if lbl in self.opp]
+        self.assertGreaterEqual(
+            len(present), 2,
+            "Outcome 1 debe mapear solicitudes a secciones a..k de la propuesta")
+        # References the proposal file explicitly.
+        self.assertIn("1-propuesta-comercial.md", self.opp)
+
+    # -- 3. Outcome 2: items + Consideraciones + Supuestos + exact matrix --- #
+    def test_outcome2_has_items_considerations_assumptions_and_matrix(self):
+        self.assertIn("Checklist de items a desarrollar", self.corr)
+        self.assertIn("Consideraciones", self.corr)
+        self.assertIn("Supuestos", self.corr)
+        # The matrix header row carries the EXACT five column labels.
+        self.assertIn(self.MATRIX_HEADER, self.corr,
+                      "la matriz debe tener las cinco columnas exactas")
+        for col in (
+                "Solicitud del cliente (cita RFP, con nombre de documento)",
+                "¿La oferta la responde? (seccion de 1-propuesta-comercial.md)",
+                "Outcome del advisory que la sustenta (fase/entregable)",
+                "Estado (Cubierto/Parcial/Pendiente)",
+                "Consideracion/Supuesto"):
+            self.assertIn(col, self.corr, col)
+
+    # -- 4. the matrix is DYNAMIC over a synthetic corpus ------------------- #
+    def test_matrix_is_dynamic_over_synthetic_corpus(self):
+        from engine.corpus import Document
+        from engine.knowledge import enrich_corpus
+        from phases import commercial_opportunity as co
+        distinctive = (
+            "1. El sistema de la Biblioteca Municipal Zunflandia debe permitir "
+            "el prestamo de libros con reserva en linea y notificaciones. "
+            "2. El catalogo debe integrarse con el portal ciudadano de "
+            "Zunflandia mediante un API de consulta."
+        )
+        synth = [
+            Document(
+                id="rfp_zunflandia", filename="RFP_Zunflandia.pdf", kind="pdf",
+                role="primary", path="/synthetic/RFP_Zunflandia.pdf",
+                size=len(distinctive) * 4, sha256="0" * 64,
+                extracted_text=distinctive,
+            ),
+        ]
+        enriched = enrich_corpus(synth)
+        opp = co.build_opportunity_analysis(documents=enriched)
+        corr = co.build_checklist_and_correlation(documents=enriched)
+        # Rows reflect the SYNTHETIC requests, not hardcoded Credi10 text.
+        for body in (opp, corr):
+            low = body.lower()
+            self.assertIn("zunflandia", low,
+                          "los outcomes deben reflejar el corpus sintetico")
+            self.assertIn("RFP_Zunflandia.pdf", body,
+                          "la cita debe nombrar el documento fuente sintetico")
+            self.assertNotIn("credi10", low,
+                             "no debe arrastrar texto hardcodeado de Credi10")
+        # Over the synthetic corpus the matrix still carries its exact header.
+        self.assertIn(self.MATRIX_HEADER, corr)
+
+    # -- 5. the skill exists at version 1.0.0 and is discovered ------------- #
+    def test_skill_exists_version_and_discovered(self):
+        self.assertTrue(os.path.isfile(os.path.join(_REPO_ROOT, self.SKILL_REL)),
+                        "debe existir el SKILL.md comercial")
+        self.assertIn("name: commercial-opportunity-analysis", self.skill)
+        self.assertIn("version: 1.0.0", self.skill)
+        from engine.skills import SkillsLoader
+        names = {s.name for s in SkillsLoader(root=_REPO_ROOT).load()}
+        self.assertIn("commercial-opportunity-analysis", names,
+                      "el loader debe descubrir el skill comercial")
+
+    # -- 6. 17 roles intact and ED/EM mention the commercial capability ----- #
+    def test_seventeen_roles_and_commercial_capability_in_ed_em(self):
+        roles = roles_pkg.load_roles()
+        self.assertEqual(len(roles), 17, "el invariante de 17 roles se mantiene")
+        ed_em = (roles["ED"].outcome + " " + roles["EM"].outcome).lower()
+        self.assertTrue(
+            ("oferta" in ed_em) or ("oportunidad comercial" in ed_em) or
+            ("correlacion" in ed_em),
+            "ED y/o EM debe mencionar la capacidad comercial (oferta / "
+            "oportunidad comercial / correlacion)")
+
+    # -- 7. both .md embedded in the HTML viewer ---------------------------- #
+    def test_both_outcomes_embedded_in_html(self):
+        # Distinctive heading text from each outcome appears in the HTML.
+        self.assertIn("Outcome 1 - Analisis de la oportunidad", self.html,
+                      "Outcome 1 debe estar embebido en el HTML")
+        self.assertIn("Outcome 2 - Checklist de oferta", self.html,
+                      "Outcome 2 debe estar embebido en el HTML")
+        # Both reachable from the nav (filenames referenced).
+        self.assertIn(self.OPP_FILENAME, self.html)
+        self.assertIn(self.CORR_FILENAME, self.html)
+
+    # -- 8. determinism: render twice -> byte-identical --------------------- #
+    def test_render_is_deterministic(self):
+        from engine.corpus import CorpusLoader
+        from engine.knowledge import KnowledgeBase
+        from phases import commercial_opportunity as co
+        kb = KnowledgeBase.from_documents(CorpusLoader(_REPO_ROOT).load())
+        roles = roles_pkg.load_roles()
+        opp1 = co.build_opportunity_analysis(knowledge_base=kb, roles=roles)
+        opp2 = co.build_opportunity_analysis(knowledge_base=kb, roles=roles)
+        corr1 = co.build_checklist_and_correlation(knowledge_base=kb, roles=roles)
+        corr2 = co.build_checklist_and_correlation(knowledge_base=kb, roles=roles)
+        self.assertEqual(opp1, opp2,
+                         "Outcome 1 debe ser byte-identico entre renders")
+        self.assertEqual(corr1, corr2,
+                         "Outcome 2 debe ser byte-identico entre renders")
+
+
 if __name__ == "__main__":
     unittest.main()
